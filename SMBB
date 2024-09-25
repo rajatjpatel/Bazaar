@@ -1,0 +1,45 @@
+//@version=5
+indicator(shorttitle="SMBB", title="SMBB", overlay=true, timeframe="", timeframe_gaps=true)
+length = input.int(21, minval=1)
+src = input(close, title="Source")
+mult = input.float(2.618, minval=0.001, maxval=50, title="StdDev")
+basis = ta.sma(src, length)
+dev = mult * ta.stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+offset = input.int(0, "Offset", minval = -500, maxval = 500)
+plot(basis, "Basis", color = color.orange, offset = offset, linewidth = 2)
+p1 = plot(upper, "Upper", color = color.red , offset = offset, linewidth = 2)
+p2 = plot(lower, "Lower", color = color.green, offset = offset, linewidth = 2)
+//
+SMA = input.int(7, "SMA", minval=1)
+SMA200 = input.int(200, "SMA", minval=1)
+hma7 = input.int(7, "HMA", minval=1)
+plot(ta.hma(close, 7), "HMA", force_overlay = true, color = color.black, linewidth = 2, title="7hma")
+plot(ta.sma(close, 7), "SMA", force_overlay = true, color = color.white, linewidth = 2, title="9sma")
+plot(ta.sma(close, 200), "SMA200", force_overlay = true, color = color.blue, linewidth = 2, title="200SMA")
+
+
+//@version=5
+indicator("7M", overlay = true)
+plot(ta.sma(close, 7), "SMA", color = color.black, linewidth = 2)
+plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
+plot(ta.hma(close, 7), "hma7",color = color.white, linewidth = 2)
+SMA = input.int(7, "SMA", minval=1)
+SMA200 = input.int(200, "SMA", minval=1)
+hma7 = input.int(7, "HMA", minval=1)
+
+
+//@version=5
+indicator(title="RSI", shorttitle = "rsi")
+rsi =ta.rsi(close, 13)
+plot(rsi, color = #065ca2)
+//Hline 
+hline(88.6, color=color.red, linewidth=1)
+hline(78.6, color=color.red, linewidth=1)
+hline(61.8, color=color.red, linewidth=1)
+hline(50.0, color=color.red, linewidth=1)
+hline(38.2, color=color.red, linewidth=1)
+hline(70.7, color=color.red, linewidth=1)
+hline(23.6, color=color.red, linewidth=1)
+RSI = input.int(13, "RSI Length", minval=1)
