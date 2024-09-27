@@ -43,3 +43,29 @@ hline(38.2, color=color.red, linewidth=1)
 hline(70.7, color=color.red, linewidth=1)
 hline(23.6, color=color.red, linewidth=1)
 RSI = input.int(13, "RSI Length", minval=1)
+
+//@version=5
+indicator("STSMA", "STSMA", overlay=true)
+// Inputs
+smaLength = input.int(5, "SMA Length", minval=0)
+smaWidth = input.int(2, "SMA Width", minval=1)
+// Calculation
+sma = ta.sma(close, smaLength)
+buySignal = close > sma and close[1] <= sma[1]
+sellSignal = close < sma and close[1] >= sma[1]
+smaColor = ta.change(sma) > 0 ? color.blue : color.red
+// Plotting
+plot(sma, "SMA", smaColor, smaWidth)
+
+//@version=5
+indicator("STSMA", "STSMA", overlay=true)
+// Inputs
+smaLength = input.int(5, "SMA Length", minval=0)
+smaWidth = input.int(2, "SMA Width", minval=1)
+// Calculation
+sma = ta.hma(close, smaLength)
+buySignal = close > sma and close[1] <= sma[1]
+sellSignal = close < sma and close[1] >= sma[1]
+smaColor = ta.change(sma) > 0 ? color.blue : color.red
+// Plotting
+plot(sma, "SMA", smaColor, smaWidth)
