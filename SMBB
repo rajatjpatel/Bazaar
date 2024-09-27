@@ -15,10 +15,10 @@ p2 = plot(lower, "Lower", color = color.green, offset = offset, linewidth = 2)
 SMA = input.int(7, "SMA", minval=1)
 SMA200 = input.int(200, "SMA", minval=1)
 hma7 = input.int(7, "HMA", minval=1)
-plot(ta.hma(close, 7), "HMA", force_overlay = true, color = color.black, linewidth = 2, title="7hma")
+//plot(ta.hma(close, 7), "HMA", force_overlay = true, color = color.black, linewidth = 2, title="7hma")
 plot(ta.sma(close, 7), "SMA", force_overlay = true, color = color.white, linewidth = 2, title="9sma")
 plot(ta.sma(close, 200), "SMA200", force_overlay = true, color = color.blue, linewidth = 2, title="200SMA")
-
+---------------------------------------------------------------------------------------------------------------------
 
 //@version=5
 indicator("7M", overlay = true)
@@ -28,7 +28,7 @@ plot(ta.hma(close, 7), "hma7",color = color.white, linewidth = 2)
 SMA = input.int(7, "SMA", minval=1)
 SMA200 = input.int(200, "SMA", minval=1)
 hma7 = input.int(7, "HMA", minval=1)
-
+---------------------------------------------------------------------------------------------------------------------
 
 //@version=5
 indicator(title="RSI", shorttitle = "rsi")
@@ -43,7 +43,7 @@ hline(50.0, color=#2c1414, linewidth=1)
 hline(38.2, color=#0be412, linewidth=1)
 hline(23.6, color=#058f09, linewidth=1)
 RSI = input.int(13, "RSI Length", minval=1)
-
+---------------------------------------------------------------------------------------------------------------------
 //@version=5
 indicator("STSMA", "STSMA", overlay=true)
 // Inputs
