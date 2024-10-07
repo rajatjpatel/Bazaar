@@ -1,5 +1,5 @@
 //@version=5
-indicator(shorttitle="SMBB", title="SMBB", overlay=true, timeframe="", timeframe_gaps=true)
+indicator(shorttitle="BBM", title="BBM", overlay=true, timeframe="", timeframe_gaps=true)
 length = input.int(21, minval=1)
 src = input(close, title="Source")
 mult = input.float(2.618, minval=0.001, maxval=50, title="StdDev")
@@ -12,12 +12,16 @@ plot(basis, "Basis", color = color.orange, offset = offset, linewidth = 2)
 p1 = plot(upper, "Upper", color = color.red , offset = offset, linewidth = 2)
 p2 = plot(lower, "Lower", color = color.green, offset = offset, linewidth = 2)
 //
-SMA = input.int(7, "SMA", minval=1)
-SMA200 = input.int(200, "SMA", minval=1)
-hma7 = input.int(7, "HMA", minval=1)
-//plot(ta.hma(close, 7), "HMA", force_overlay = true, color = color.black, linewidth = 2, title="7hma")
-plot(ta.sma(close, 7), "SMA", force_overlay = true, color = color.white, linewidth = 2, title="9sma")
-plot(ta.sma(close, 200), "SMA200", force_overlay = true, color = color.blue, linewidth = 2, title="200SMA")
+// Inputs
+smaLength = input.int(5, "SMA Length", minval=0)
+smaWidth = input.int(2, "SMA Width", minval=1)
+// Calculation
+sma = ta.sma(close, smaLength)
+buySignal = close > sma and close[1] <= sma[1]
+sellSignal = close < sma and close[1] >= sma[1]
+smaColor = ta.change(sma) > 0 ? color.blue : color.red
+// Plotting
+plot(sma, "SMA", smaColor, smaWidth)
 ---------------------------------------------------------------------------------------------------------------------
 
 //@version=5
@@ -44,16 +48,4 @@ hline(38.2, color=#0be412, linewidth=1)
 hline(23.6, color=#058f09, linewidth=1)
 RSI = input.int(13, "RSI Length", minval=1)
 ---------------------------------------------------------------------------------------------------------------------
-//@version=5
-indicator("STSMA", "STSMA", overlay=true)
-// Inputs
-smaLength = input.int(5, "SMA Length", minval=0)
-smaWidth = input.int(2, "SMA Width", minval=1)
-// Calculation
-sma = ta.sma(close, smaLength)
-buySignal = close > sma and close[1] <= sma[1]
-sellSignal = close < sma and close[1] >= sma[1]
-smaColor = ta.change(sma) > 0 ? color.blue : color.red
-// Plotting
-plot(sma, "SMA", smaColor, smaWidth)
 
