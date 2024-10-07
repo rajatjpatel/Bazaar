@@ -11,7 +11,6 @@ offset = input.int(0, "Offset", minval = -500, maxval = 500)
 plot(basis, "Basis", color = color.orange, offset = offset, linewidth = 2)
 p1 = plot(upper, "Upper", color = color.red , offset = offset, linewidth = 2)
 p2 = plot(lower, "Lower", color = color.green, offset = offset, linewidth = 2)
-//
 // Inputs
 smaLength = input.int(5, "SMA Length", minval=0)
 smaWidth = input.int(2, "SMA Width", minval=1)
@@ -19,9 +18,11 @@ smaWidth = input.int(2, "SMA Width", minval=1)
 sma = ta.sma(close, smaLength)
 buySignal = close > sma and close[1] <= sma[1]
 sellSignal = close < sma and close[1] >= sma[1]
-smaColor = ta.change(sma) > 0 ? color.blue : color.red
+smaColor = ta.change(sma) > 0 ? color.blue : color.pink
 // Plotting
 plot(sma, "SMA", smaColor, smaWidth)
+//
+plot(ta.sma(close, 200), "SMA200", color = color.white, linewidth = 2)
 ---------------------------------------------------------------------------------------------------------------------
 
 //@version=5
