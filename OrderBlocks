@@ -1,0 +1,141 @@
+
+
+//@version=5
+indicator("OrderBlocks ", "AlgoAlpha - OrderBlocks", overlay = true)
+malen = input.int(93, "Trend Period", tooltip = "The look-back period for the Hull Moving Average")
+plen = input.int(10, "Pivot Point Detection Period", tooltip = "The look-back period pivot points detection, pivots are detected with delay(depending on user imput, 10 by default)")
+maTypeInput = input.string("HMA", title="MA Type", options=["SMA", "HMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"], group="MA Type Settings", display = display.data_window)
+green = input.color(#00ffbb, "Bullish Color", group = "Appearance")
+red = input.color(#ff1100, "Bearish Color", group = "Appearance")
+
+ma(source, length, type) =>
+    switch type
+        "SMA" => ta.sma(source, length)
+        "HMA" => ta.hma(source, length)
+        "EMA" => ta.ema(source, length)
+        "SMMA (RMA)" => ta.rma(source, length)
+        "WMA" => ta.wma(source, length)
+        "VWMA" => ta.vwma(source, length)
+
+hma = ma(close, malen, maTypeInput)
+trnd = hma>hma[1] ? 1 : -1
+
+var highindex = 0
+var lowindex = 0
+
+ph = ta.pivothigh(plen, plen)
+pl = ta.pivotlow(plen, plen)
+
+if not na(ph)
+    highindex := bar_index - plen
+
+if not na(pl)
+    lowindex := bar_index - plen
+
+var aR = array.new_box()
+var aS = array.new_box()
+var aR1 = array.new_box()
+var aS1 = array.new_box()
+var pivot_indexes = array.new_int()
+var bars = 0.0
+
+if trnd != trnd[1]
+    if trnd == 1
+        if pivot_indexes.indexof(lowindex) == -1
+            aS.push(box.new(lowindex, low[bar_index - lowindex], bar_index + 1, high[bar_index - lowindex], color.new(chart.fg_color, 100), 1, line.style_solid, extend.none, bgcolor = color.new(chart.fg_color, 90), text_size = size.small, text_color = red, text_halign =  text.align_center, text_valign = text.align_center, text_font_family = font.family_monospace))
+            aS1.push(box.new(lowindex, low[bar_index - lowindex], bar_index + 1, math.min(open[bar_index - lowindex], close[bar_index - lowindex]), color.new(green, 100), 1, line.style_solid, extend.none, bgcolor = color.new(green, 85), text_size = size.small, text_color = red, text_halign =  text.align_center, text_valign = text.align_center, text_font_family = font.family_monospace))
+    pivot_indexes.push(lowindex)    
+
+    if trnd == -1
+        if pivot_indexes.indexof(highindex) == -1
+            aR.push(box.new(highindex, low[bar_index - highindex], bar_index + 1, high[bar_index - highindex], color.new(chart.fg_color, 100), 1, line.style_solid, extend.none, bgcolor = color.new(chart.fg_color, 90), text_size = size.small, text_color = red, text_halign =  text.align_center, text_valign = text.align_center, text_font_family = font.family_monospace))
+            aR1.push(box.new(highindex, high[bar_index - highindex], bar_index + 1, math.max(open[bar_index - highindex], close[bar_index - highindex]), color.new(red, 100), 1, line.style_solid, extend.none, bgcolor = color.new(red, 85), text_size = size.small, text_color = red, text_halign =  text.align_center, text_valign = text.align_center, text_font_family = font.family_monospace))
+        pivot_indexes.push(highindex)
+
+if aR.size() > 0
+    qt = aR.size()
+
+    for ln = qt - 1 to 0
+        if ln < aR.size()
+            cL = aR.get(ln)
+            cL1 = aR1.get(ln)
+            yL = cL.get_top()
+            zL = cL.get_bottom()
+            xL = cL.get_left()
+
+            if close > zL
+                aR.remove(ln)
+                aR1.remove(ln)
+
+            else
+                cL.set_right(bar_index + 1)
+                cL1.set_right(bar_index + 1)
+
+    if aR.size() > 500
+        aR.shift().delete()
+
+if aS.size() > 0
+    qt = aS.size()
+
+    for ln = qt - 1 to 0
+        if ln < aS.size()
+            cL = aS.get(ln)
+            cL1 = aS1.get(ln)
+            yL = cL.get_bottom()
+            zL = cL.get_top()
+            xL = cL.get_left()
+
+            if close < zL
+                aS.remove(ln)
+                aS1.remove(ln)
+
+
+            else
+                cL.set_right(bar_index + 1)
+                cL1.set_right(bar_index + 1)
+
+    if aS.size() > 500
+        aS.shift().delete()
+
+volatility = ta.atr(7) * 3
+
+warningUP = 0
+warningDOWN = 0
+
+if hma < hma[1]   //downtrend
+    if aS.size() > 0
+        qt = aS.size()
+        for ln = qt - 1 to 0
+            if (close - aS.get(ln).get_top()) < volatility
+                warningDOWN := 1
+
+if hma > hma[1]   //uptrend
+    if aR.size() > 0
+        qt = aR.size()
+        for ln = qt - 1 to 0
+            if (aR.get(ln).get_bottom() - close) < volatility
+                warningUP := 1
+
+
+plotchar(ph != 0 ? true : false, "Pivot Highs", "●", location.abovebar, chart.fg_color, size = size.tiny, offset = -plen)
+plotchar(pl != 0 ? true : false, "Pivot Lows", "●", location.belowbar, chart.fg_color, size = size.tiny, offset = -plen)
+
+
+var lab = label(na)
+
+label.delete(lab)
+
+if warningDOWN > 0
+    lab := label.new(bar_index, close, "Price is trending down, Bullish Blocks may not hold", color = color.orange, textcolor = color.white, style = label.style_label_left)
+else if warningUP > 0
+    lab := label.new(bar_index, close, "Price is trending up, Bearish Blocks may not hold", color = color.orange, textcolor = color.white, style = label.style_label_left)
+else
+    lab := label.new(bar_index, close, hma > hma[1] ? "Price is trending up" : "Price is trending down", color = hma > hma[1] ? green : red, textcolor = color.white, style = label.style_label_left)
+
+plot(hma, "Hull Moving Average", hma > hma[1] ? green : red, linewidth = 2)
+
+alertcondition(warningDOWN > 0, "Price is trending down and is very close to a bullish block")
+alertcondition(warningUP > 0, "Price is trending up and is very close to a bearish block")
+alertcondition(ta.crossover(hma, hma[1]), "Price is trending up")
+alertcondition(ta.crossunder(hma, hma[1]), "Price is trending down")
+alertcondition(ta.cross(hma, hma[1]), "Trend Change (both bullish and bearish)")
