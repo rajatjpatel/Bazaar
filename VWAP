@@ -1,0 +1,104 @@
+
+
+//@version=5
+indicator(title="VWAP ", shorttitle="VWAP Divergence ", overlay=true)
+
+hideonDWM = input(false, title="Hide VWAP on 1D or Above", group="VWAP Settings")
+
+divergenceLookback = input(5, title="Lookback Period", group="Divergence Settings", tooltip = "How long the lookback period is to determine whether the increase/decrease is enough to trigger a divergence")
+divergenceATRmultiplier = input.float(3, title="ATR Multiplier", group="Divergence Settings", tooltip = "How much the ATR is multiplied by to determine whether the increase/decrease over the last {Lookback bars} is enough to trigger a divergence.", step=0.1)
+
+
+bearishColor = input.color(color.red, title="VWAP down color", group="Visual Settings", inline="Colors")
+bullishColor = input.color(color.lime, title="VWAP up color", group="Visual Settings", inline="Colors")
+alternateColor = input(true, title="Trend Coloring", group="Visual Settings", tooltip = "Determines whether the VWAP line will alternate between red (decreasing) and green (increasing).")
+showVWAP = input(true, title="Show VWAP", group="Visual Settings")
+divergence_plot_size_input = input.string(defval = "Normal", title = "Divergence Plot Size", options = ["Small", "Normal", "Large"], group="Visual Settings")
+
+divergence_plot_size = divergence_plot_size_input == "Small" ? 3 : divergence_plot_size_input == "Normal" ? 5 : 7
+var lastBullishDivergence = bar_index
+var lastBearishDivergence = bar_index
+
+var anchor = input.string(defval = "Session", title="Anchor Period",
+ options=["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
+src = input(title = "Source", defval = hlc3, group="VWAP Settings")
+offset = input(0, title="Offset", group="VWAP Settings")
+
+// showAlerts = input(true, title="Alerts Enabled", group="Alert Settings")
+bearishAlertSignal = input(true, title="Bearish divergence alerts", group="Alert Settings", inline = "Alert Confirmations")
+bullishAlertSignal = input(true, title="Bullish divergence alerts", group="Alert Settings", inline = "Alert Confirmations")
+
+if barstate.islast and ta.cum(volume) == 0
+    runtime.error("No volume is provided by the data vendor.")
+
+new_earnings = request.earnings(syminfo.tickerid, earnings.actual, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol=true)
+new_dividends = request.dividends(syminfo.tickerid, dividends.gross, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol=true)
+new_split = request.splits(syminfo.tickerid, splits.denominator, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol=true)
+
+isNewPeriod = switch anchor
+	"Earnings"  => not na(new_earnings)
+	"Dividends" => not na(new_dividends)
+	"Splits"    => not na(new_split)
+	"Session"   => timeframe.change("D")
+	"Week"      => timeframe.change("W")
+	"Month"     => timeframe.change("M")
+	"Quarter"   => timeframe.change("3M")
+	"Year"      => timeframe.change("12M")
+	"Decade"    => timeframe.change("12M") and year % 10 == 0
+	"Century"   => timeframe.change("12M") and year % 100 == 0
+	=> false
+
+isEsdAnchor = anchor == "Earnings" or anchor == "Dividends" or anchor == "Splits"
+if na(src[1]) and not isEsdAnchor
+	isNewPeriod := true
+
+float vwapValue = na
+
+if not (hideonDWM and timeframe.isdwm)
+    [_vwap, _stdevUpper, _] = ta.vwap(src, isNewPeriod, 1)
+	vwapValue := _vwap
+    stdevAbs = _stdevUpper - _vwap
+
+
+plot(vwapValue, title="VWAP", color=showVWAP?(alternateColor?vwapValue > vwapValue[1]?#00ff0d:#ff0000:#ffffff):na, offset=offset, linewidth = 2)
+
+last5gain = high-low[divergenceLookback]
+last5loss = high[divergenceLookback]-low
+
+atr = ta.atr(14)
+
+gaps = false
+
+for i = 0 to divergenceLookback
+	if math.abs(open[i] - close[i+1]) > atr
+		gaps := true
+
+bullishDivergenceBool = close>close[1] and vwapValue[0]<vwapValue[1] and last5gain > atr*divergenceATRmultiplier and (bar_index - lastBullishDivergence > 15 or (ta.highest(high, 20)-ta.lowest(low, 20)>atr*2 and bar_index - lastBullishDivergence > 10))
+
+if gaps == true
+	bullishDivergenceBool := false
+
+if bullishDivergenceBool and bullishAlertSignal
+	alert(message = "Bullish VWAP Divergence", freq = alert.freq_once_per_bar_close)
+
+// bullish divergence
+plot(bullishDivergenceBool ? low - atr*0.5:na, style = plot.style_circles, color=bullishColor, linewidth = 7, title = "Bullish Divergence Dot")
+
+if bullishDivergenceBool
+	lastBullishDivergence := bar_index
+
+
+
+bearishDivergenceBool = close<close[1] and vwapValue[0]>vwapValue[1] and last5loss > atr*divergenceATRmultiplier and (bar_index - lastBearishDivergence > 15 or (ta.highest(high, 20)-ta.lowest(low, 20)>atr*2 and bar_index - lastBearishDivergence > 10))
+
+if gaps == true
+	bearishDivergenceBool := false
+
+if bearishDivergenceBool and bearishAlertSignal
+	alert(message = "Bearish VWAP Divergence", freq = alert.freq_once_per_bar_close)
+
+// bearish divergence
+plot(bearishDivergenceBool ? high + atr*0.5:na, style = plot.style_circles, color=bearishColor, linewidth = divergence_plot_size, title = "Bearish Divergence Dot")
+
+if bearishDivergenceBool
+	lastBearishDivergence := bar_index
