@@ -1,0 +1,36 @@
+//@version=5
+indicator("Fibonacci Retracement", overlay=true)
+
+// Input for the number of bars to look back for the high and low
+len = input.int(100, title="Lookback Period")
+
+// Find the highest high and lowest low over the lookback period
+highLevel = ta.highest(high, len)
+lowLevel = ta.lowest(low, len)
+
+// Calculate the difference between the high and low levels
+diff = highLevel - lowLevel
+
+// Calculate Fibonacci levels
+fib_0 = highLevel
+fib_0_236 = highLevel - diff * 0.236
+fib_0_382 = highLevel - diff * 0.382
+fib_0_5 = highLevel - diff * 0.5
+fib_0_618 = highLevel - diff * 0.618
+fib_1 = lowLevel
+
+// Plot horizontal lines for Fibonacci levels
+line.new(bar_index[0], fib_0, bar_index[1], fib_0, color=color.green, width=2)
+line.new(bar_index[0], fib_0_236, bar_index[1], fib_0_236, color=color.blue, width=2)
+line.new(bar_index[0], fib_0_382, bar_index[1], fib_0_382, color=color.red, width=2)
+line.new(bar_index[0], fib_0_5, bar_index[1], fib_0_5, color=color.purple, width=2)
+line.new(bar_index[0], fib_0_618, bar_index[1], fib_0_618, color=color.orange, width=2)
+line.new(bar_index[0], fib_1, bar_index[1], fib_1, color=color.green, width=2)
+
+// Add labels for the Fibonacci levels on the right side of the chart
+label.new(bar_index[1], fib_0, text="0% (High)", color=color.green, style=label.style_label_right)
+label.new(bar_index[1], fib_0_236, text="23.6%", color=color.blue, style=label.style_label_right)
+label.new(bar_index[1], fib_0_382, text="38.2%", color=color.red, style=label.style_label_right)
+label.new(bar_index[1], fib_0_5, text="50%", color=color.purple, style=label.style_label_right)
+label.new(bar_index[1], fib_0_618, text="61.8%", color=color.orange, style=label.style_label_right)
+label.new(bar_index[1], fib_1, text="100% (Low)", color=color.green, style=label.style_label_right)
