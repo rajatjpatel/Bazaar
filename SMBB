@@ -18,7 +18,7 @@ smaWidth = input.int(2, "SMA Width", minval=1)
 sma = ta.sma(close, smaLength)
 buySignal = close > sma and close[1] <= sma[1]
 sellSignal = close < sma and close[1] >= sma[1]
-smaColor = ta.change(sma) > 0 ? color.blue : color.pink
+smaColor = ta.change(sma) > 0 ? color.blue : color.purple
 // Plotting
 plot(sma, "SMA", smaColor, smaWidth)
 //
@@ -49,4 +49,20 @@ hline(38.2, color=#0be412, linewidth=1)
 hline(23.6, color=#058f09, linewidth=1)
 RSI = input.int(13, "RSI Length", minval=1)
 ---------------------------------------------------------------------------------------------------------------------
+//@version=5
+indicator('STF', overlay=true)
+//          INPUTS: 
+lenFast = input.int(1, title='Length of Fast ', minval=1)
+lenSlow = input.int(5, title='Length of Slow ', minval=1)
+lenC = input.int(8, title='Length of  Curve', minval=1)
 
+co(sFast, sSlow, lFast, lSlow, lC) =>
+    fastC = ta.sma(sFast, lFast)
+    slowC = ta.sma(sSlow, lSlow)
+    cC = fastC + slowC
+    ta.sma(cC, lC)
+
+closeC = co(close, close, lenFast, lenSlow, lenC)
+//              PLOTTING: 
+lineColor = closeC > closeC[1] ? color.green : color.red
+c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
