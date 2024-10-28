@@ -11,6 +11,24 @@ offset = input.int(0, "Offset", minval = -500, maxval = 500)
 plot(basis, "Basis", color = color.orange, offset = offset, linewidth = 2)
 p1 = plot(upper, "Upper", color = color.red , offset = offset, linewidth = 2)
 p2 = plot(lower, "Lower", color = color.green, offset = offset, linewidth = 2)
+//          INPUTS: 
+lenFast = input.int(1, title='Length of Fast ', minval=1)
+lenSlow = input.int(5, title='Length of Slow ', minval=1)
+lenC = input.int(8, title='Length of  Curve', minval=1)
+
+co(sFast, sSlow, lFast, lSlow, lC) =>
+    fastC = ta.sma(sFast, lFast)
+    slowC = ta.sma(sSlow, lSlow)
+    cC = fastC + slowC
+    ta.sma(cC, lC)
+
+closeC = co(close, close, lenFast, lenSlow, lenC)
+//              PLOTTING: 
+lineColor = closeC > closeC[1] ? color.green : color.red
+c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
+---------------------------------------------------------------------------------------------------------------------
+//@version=5
+indicator('S', overlay=true)
 // Inputs
 smaLength = input.int(5, "SMA Length", minval=0)
 smaWidth = input.int(2, "SMA Width", minval=1)
@@ -66,3 +84,4 @@ closeC = co(close, close, lenFast, lenSlow, lenC)
 //              PLOTTING: 
 lineColor = closeC > closeC[1] ? color.green : color.red
 c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
+plot(ta.sma(close, 200), "SMA200", color = color.white, linewidth = 2)
