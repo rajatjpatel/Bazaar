@@ -1,0 +1,167 @@
+
+//@version=5
+indicator('STLRC', overlay = true, max_lines_count = 3)
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙐𝙎𝙀𝙍 𝙄𝙉𝙋𝙐𝙏𝙎
+// ---------------------------------------------------------------------------------------------------------------------{
+bool bands      = input.bool(true, "Plot Linear Regression Bands", group = "Settings Bands")
+
+int window      = input.int(150, "Length", group = "Settings Bands")
+float devlen_b  = input.float(3., "Deviation Linear Regression Bands",step=0.1, group = "Settings Bands")
+
+bool channel    = input.bool(false, "Plot Linear Regression Channel", group = "Settings Channel")
+int window1     = input.int(150, "Channel Length", group = "Settings Channel")
+float devlen1   = input.float(1., "Deviation Linear Regression Channel",step=0.1, group = "Settings Channel") 
+
+bool channel1   = input.bool(false, "Plot Future Projection of linear regression", group = "Future Projection Channel")
+bool arr_dirc   = input.bool(false, "Plot Arrow Direction", group = "Future Projection Channel")
+int window2     = input.int(50, "Length", group = "Future Projection Channel")
+float devlen2   = input.float(1., "Deviation Future Projection Regression Channel",step=0.1, group = "Future Projection Channel") 
+
+// Define colors for up, down, and mid lines
+color col_dn      = #f01313
+color col_up      = color.aqua
+color col_mid     = color.yellow
+color gray        = color.gray
+color fg_col      = chart.fg_color
+
+// Regression Channel Arrays Line
+var reglines  = array.new_line(3)
+var reglines_ = array.new_line(3)
+
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙄𝙉𝘿𝙄𝘾𝘼𝙏𝙊𝙍 𝘾𝘼𝙇𝘾𝙐𝙇𝘼𝙏𝙄𝙊𝙉𝙎
+// ---------------------------------------------------------------------------------------------------------------------{
+
+//@function linear_regression
+//@description Calculates linear regression coefficients for a given source and window.
+//@param src  (series float) The data series on which linear regression is calculated.
+//@param window  (int) The number of bars to use in the calculation.
+//@returns the intercept slope, Deviation, end of the channel.
+linear_regression(src, window) =>
+    sum_x = 0.0
+    sum_y = 0.0
+    sum_xy = 0.0
+    sum_x_sq = 0.0
+
+    // Calculate sums
+    for i = 0 to window - 1 by 1
+        sum_x += i + 1
+        sum_y += src[i]
+        sum_xy += (i + 1) * src[i]
+        sum_x_sq += math.pow(i + 1, 2)
+
+    // Calculate linear regression coefficients
+    slope     = (window * sum_xy - sum_x * sum_y) / (window * sum_x_sq - math.pow(sum_x, 2))
+    intercept = (sum_y - slope * sum_x) / window
+
+    y1 = intercept  + slope * (window - 1) 
+    dev = 0.0
+    for i = 0 to window - 1
+        dev := dev + math.pow(src[i] - (slope * (window - i) + intercept), 2)
+    dev := math.sqrt(dev/window)
+
+    [intercept, y1, dev, slope]
+
+[y2, y1, dev, slope] = linear_regression(close, window)
+
+[y2_, y1_, dev_, slope_] = linear_regression(close, window1)
+
+[y2__, y1__, dev__, slope__] = linear_regression(close, window2)
+
+// Linear Regression Channel Lines
+series float mid     = y2 + slope
+series float upper   = mid  + ta.rma(high - low, window) * devlen_b
+series float lower   = mid  - ta.rma(high - low, window) * devlen_b
+
+// Returns True for window length period
+isAllowed = (last_bar_index - bar_index < window1)
+
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙑𝙄𝙎𝙐𝘼𝙇𝙄𝙕𝘼𝙏𝙄𝙊𝙉
+// ---------------------------------------------------------------------------------------------------------------------{
+
+// Plot upper, lower, and mid lines if channel is not enabled
+p_u = plot(upper, color = bands and channel ? na : bands ? gray : na, linewidth = 2)
+p_l = plot(lower, color = bands and channel ? na : bands ? gray : na, linewidth = 2)
+p_m = plot(mid,   color = bands and channel ? na : bands ? gray : na)
+
+// Fill areas between upper/mid and lower/mid lines
+fill(p_u, p_m, mid, upper, na, bands and channel ? na : bands ? color.new(col_up, 80) : na)
+fill(p_m, p_l, lower, mid,     bands and channel ? na : bands ? color.new(col_dn, 80) : na, na)
+
+
+if barstate.islast and channel
+    for i = 0 to 2
+        array.set(reglines, i,
+             line.new(x1 = bar_index - (window1 - 1), 
+                     y1 = y1_ + dev_ * devlen1 * (i - 1), 
+                     x2 = bar_index, 
+                     y2 = y2_ + dev_ * devlen1 * (i - 1), 
+                     color = color.gray,
+                     style = i % 2 == 1 ? line.style_dashed : line.style_solid,
+                     width = 2,
+                     extend = extend.none)
+                     )
+
+    linefill.new(array.get(reglines, 1), array.get(reglines, 2), color = color.new(col_up, 90))
+    linefill.new(array.get(reglines, 1), array.get(reglines, 0), color = color.new(col_dn, 90))
+
+
+if barstate.islast and channel1
+    for i = 0 to 2
+        array.set(reglines_, i,
+             line.new(x1 = bar_index - (window2 - 1), 
+                     y1 = y1__ + dev__ * devlen2 * (i - 1), 
+                     x2 = bar_index, 
+                     y2 = y2__ + dev__ * devlen2 * (i - 1), 
+                     color = color.gray,
+                     style = i % 2 == 1 ? line.style_dotted : line.style_dashed,
+                     width = 1,
+                     extend = extend.right)
+                     )               
+
+    linefill.new(array.get(reglines_, 1), array.get(reglines_, 2), color = color.new(col_up, 95))
+    linefill.new(array.get(reglines_, 1), array.get(reglines_, 0), color = color.new(col_dn, 95))
+
+
+if arr_dirc
+    l1 = label.new(chart.point.from_index(bar_index, hl2 > y2__ ? high : low), 
+             text = hl2 > y2__ ? "⇗" : hl2 < y2__ ? "⇘" : "⇒",
+             textcolor = hl2 > y2__ ? col_up : hl2 < y2__ ? col_dn : gray, 
+             color = color(na), 
+             size = size.huge, 
+             style =  label.style_label_left
+             )     
+    label.delete(l1[1])
+
+// Bar Heat Map
+b_c = (close - lower) / (upper - lower)
+b_c := b_c > 1 ? 1 : b_c < 0 ? 0 : b_c
+
+bar_color = channel ? 
+     (isAllowed ?
+         (b_c <= 0.5 ? color.from_gradient(b_c, 0, 0.5, col_up, col_mid) : color.from_gradient(b_c, 0.5, 1, col_mid, col_dn))
+         : na) 
+     : (b_c >= 0.5 ? color.from_gradient(b_c, 0.5, 1, col_mid, col_up) : color.from_gradient(b_c, 0, 0.5, col_dn, col_mid))
+
+plotcandle(open, high, low, close, 
+             title = "Bar HeatMap", 
+               color = bar_color,
+                 wickcolor = bar_color,
+                  bordercolor = bar_color
+                     )
+barcolor(bar_color)
+
+// Conditions for crossovers
+condition1 = bands and channel ? na : bands ? ta.pivotlow(3, 3) and close < lower : na 
+condition2 = bands and channel ? na : bands ? ta.pivothigh(3, 3) and close > upper: na
+
+// Plot markers for channel break outs
+plotchar(condition1, "", "◆", size=size.tiny, location=location.belowbar, color = col_up)
+plotchar(condition2, "", "◆", size=size.tiny, location=location.abovebar, color = col_dn)
+
+// ---------------------------------------------------------------------------------------------------------------------}
