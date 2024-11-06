@@ -34,8 +34,7 @@ sellSignal = close < sma and close[1] >= sma[1]
 smaColor = ta.change(sma) > 0 ? color.blue : color.purple
 plot(sma, "SMA", smaColor, smaWidth)
 plot(ta.sma(close, 200), "SMA200", color = color.white, linewidth = 2)
----------------------------------------------------------------------------------------------------------------------
-
+---------------------------------------------------------------------------------------------------------------------HACandles
 //@version=5
 indicator("7M", overlay = true)
 SMA = input.int(7, "SMA", minval=1)
@@ -43,7 +42,6 @@ SMA200 = input.int(200, "SMA", minval=1)
 plot(ta.sma(close, 7), "SMA", color = color.black, linewidth = 2)
 plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
 ---------------------------------------------------------------------------------------------------------------------
-
 //@version=5
 indicator(title="RSI", shorttitle = "rsi")
 rsi =ta.rsi(close, 13)
@@ -72,3 +70,12 @@ closeC = co(close, close, lenFast, lenSlow, lenC)
 lineColor = closeC > closeC[1] ? color.green : color.red
 c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
 plot(ta.sma(close, 200), "SMA200", color = color.white, linewidth = 2)
+---------------------------------------------------------------------------------------------------------------------HACandles
+//@version=5
+indicator("STDe")
+delta = close - open
+plot(delta)
+S2 = ta.sma(delta,3)
+color=S2 < 0 ? (S2 < S2[1] ? color.red : color.lime) : (S2 >= 0 ? (S2 > S2[1] ? color.lime : color.red) : na)
+plot(S2, color=color, linewidth=2)
+h0 = hline(0)
