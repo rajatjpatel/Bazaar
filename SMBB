@@ -38,12 +38,10 @@ plot(ta.sma(close, 200), "SMA200", color = color.white, linewidth = 2)
 
 //@version=5
 indicator("7M", overlay = true)
-plot(ta.sma(close, 7), "SMA", color = color.black, linewidth = 2)
-plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
-plot(ta.hma(close, 7), "hma7",color = color.white, linewidth = 2)
 SMA = input.int(7, "SMA", minval=1)
 SMA200 = input.int(200, "SMA", minval=1)
-hma7 = input.int(7, "HMA", minval=1)
+plot(ta.sma(close, 7), "SMA", color = color.black, linewidth = 2)
+plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
 ---------------------------------------------------------------------------------------------------------------------
 
 //@version=5
