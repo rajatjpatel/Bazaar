@@ -23,7 +23,7 @@ co(sFast, sSlow, lFast, lSlow, lC) =>
 closeC = co(close, close, lenFast, lenSlow, lenC)
 lineColor = closeC > closeC[1] ? color.green : color.red
 c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
 //@version=5
 indicator('S', overlay=true)
 smaLength = input.int(5, "SMA Length", minval=0)
