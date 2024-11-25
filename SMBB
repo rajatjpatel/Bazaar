@@ -23,6 +23,7 @@ co(sFast, sSlow, lFast, lSlow, lC) =>
 closeC = co(close, close, lenFast, lenSlow, lenC)
 lineColor = closeC > closeC[1] ? color.green : color.red
 c = plot(closeC / 2, title=' Curve', color=lineColor, linewidth=2, transp=0)
+plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
 --------------------------------------------------------------------------------------------------------------------
 //@version=5
 indicator('S', overlay=true)
@@ -44,7 +45,7 @@ plot(ta.sma(close, 200), "SMA200", color = color.blue, linewidth = 2)
 ---------------------------------------------------------------------------------------------------------------------
 //@version=5
 indicator(title="RSI", shorttitle = "rsi")
-rsi =ta.rsi(close, 13)
+rsi =ta.rsi(close, 8)
 plot(rsi, color = #065ca2)
 //Hline 
 hline(88.6, color=#f10707, linewidth=1)
@@ -54,7 +55,7 @@ hline(61.8, color=#f7b707, linewidth=1)
 hline(50.0, color=#2c1414, linewidth=1)
 hline(38.2, color=#0be412, linewidth=1)
 hline(23.6, color=#058f09, linewidth=1)
-RSI = input.int(13, "RSI Length", minval=1)
+RSI = input.int(8, "RSI Length", minval=1)
 ---------------------------------------------------------------------------------------------------------------------
 //@version=5
 indicator('STF', overlay=true)
