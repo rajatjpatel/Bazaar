@@ -1,0 +1,88 @@
+//@version=5
+indicator("AHPS", shorttitle="AHPS", overlay=true)
+
+// ZigZag parameters to find swings
+zigzagDepth = input.int(12, title="ZigZag Depth")
+
+// Define swing points (X, A, B, C, D)
+var int x_index = na
+var int a_index = na
+var int b_index = na
+var int c_index = na
+var int d_index = na
+
+var float xx = na
+var float aa = na
+var float bb = na
+var float cc = na
+var float dd = na
+
+// Update swing points
+if (zigzagDepth > 0)
+    if na(xx)
+        xx := high
+        x_index := bar_index
+    if na(aa) and low[zigzagDepth] < low
+        aa := low
+        a_index := bar_index[zigzagDepth]
+    if na(bb) and high[zigzagDepth] > high
+        bb := high
+        b_index := bar_index[zigzagDepth]
+    if na(cc) and low[zigzagDepth] < low
+        cc := low
+        c_index := bar_index[zigzagDepth]
+    if na(dd) and high[zigzagDepth] > high
+        dd := high
+        d_index := bar_index[zigzagDepth]
+
+// Fibonacci levels for all patterns
+XA_Butterfly = 0.786
+AB_Butterfly = 1.618
+XA_Gartley = 0.618
+AB_Gartley = 1.272
+XA_Crab = 1.618
+AB_Crab = 2.618
+XA_Bat = 0.5
+AB_Bat = 0.886
+XA_Cypher = 0.786
+AB_Cypher = 1.414
+XA_ThreeDrives = 1.27
+AB_ThreeDrives = 1.618
+
+// Pattern detection logic
+isButterflyBearish = (aa - bb) / (xx - aa) > XA_Butterfly and (cc - aa) / (bb - aa) > AB_Butterfly
+isGartleyBearish = (aa - bb) / (xx - aa) > XA_Gartley and (cc - aa) / (bb - aa) > AB_Gartley
+isCrabBearish = (aa - bb) / (xx - aa) > XA_Crab and (cc - aa) / (bb - aa) > AB_Crab
+isBatBearish = (aa - bb) / (xx - aa) > XA_Bat and (cc - aa) / (bb - aa) > AB_Bat
+isCypherBearish = (aa - bb) / (xx - aa) > XA_Cypher and (cc - aa) / (bb - aa) > AB_Cypher
+isThreeDrivesBearish = (aa - bb) / (xx - aa) > XA_ThreeDrives and (cc - aa) / (bb - aa) > AB_ThreeDrives
+
+// Bullish patterns
+isButterflyBullish = (bb - aa) / (xx - bb) > XA_Butterfly and (aa - cc) / (bb - aa) > AB_Butterfly
+isGartleyBullish = (bb - aa) / (xx - bb) > XA_Gartley and (aa - cc) / (bb - aa) > AB_Gartley
+isCrabBullish = (bb - aa) / (xx - bb) > XA_Crab and (aa - cc) / (bb - aa) > AB_Crab
+isBatBullish = (bb - aa) / (xx - bb) > XA_Bat and (aa - cc) / (bb - aa) > AB_Bat
+isCypherBullish = (bb - aa) / (xx - bb) > XA_Cypher and (aa - cc) / (bb - aa) > AB_Cypher
+isThreeDrivesBullish = (bb - aa) / (xx - bb) > XA_ThreeDrives and (aa - cc) / (bb - aa) > AB_ThreeDrives
+
+// Plot detected patterns
+plotshape(isButterflyBearish, title="Bearish Butterfly", location=location.belowbar, color=color.red, style=shape.labeldown, text="Butterfly")
+plotshape(isGartleyBearish, title="Bearish Gartley", location=location.belowbar, color=color.red, style=shape.labeldown, text="Gartley")
+plotshape(isCrabBearish, title="Bearish Crab", location=location.belowbar, color=color.red, style=shape.labeldown, text="Crab")
+plotshape(isBatBearish, title="Bearish Bat", location=location.belowbar, color=color.red, style=shape.labeldown, text="Bat")
+plotshape(isCypherBearish, title="Bearish Cypher", location=location.belowbar, color=color.red, style=shape.labeldown, text="Cypher")
+plotshape(isThreeDrivesBearish, title="Bearish 3 Drives", location=location.belowbar, color=color.red, style=shape.labeldown, text="3 Drives")
+
+plotshape(isButterflyBullish, title="Bullish Butterfly", location=location.abovebar, color=color.green, style=shape.labelup, text="Butterfly")
+plotshape(isGartleyBullish, title="Bullish Gartley", location=location.abovebar, color=color.green, style=shape.labelup, text="Gartley")
+plotshape(isCrabBullish, title="Bullish Crab", location=location.abovebar, color=color.green, style=shape.labelup, text="Crab")
+plotshape(isBatBullish, title="Bullish Bat", location=location.abovebar, color=color.green, style=shape.labelup, text="Bat")
+plotshape(isCypherBullish, title="Bullish Cypher", location=location.abovebar, color=color.green, style=shape.labelup, text="Cypher")
+plotshape(isThreeDrivesBullish, title="Bullish 3 Drives", location=location.abovebar, color=color.green, style=shape.labelup, text="3 Drives")
+
+// Draw lines connecting the swing points for visual aid
+if (not na(x_index) and not na(a_index) and not na(b_index) and not na(c_index) and not na(d_index))
+    line.new(x1=x_index, y1=xx, x2=a_index, y2=aa, color=color.red, width=2)
+    line.new(x1=a_index, y1=aa, x2=b_index, y2=bb, color=color.green, width=2)
+    line.new(x1=b_index, y1=bb, x2=c_index, y2=cc, color=color.red, width=2)
+    line.new(x1=c_index, y1=cc, x2=d_index, y2=dd, color=color.green, width=2)
