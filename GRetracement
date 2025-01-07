@@ -1,0 +1,217 @@
+
+//@version=4
+study("GRetracement", overlay=true)
+
+swing_high = input(title="Swing High", type=input.float, defval=0.0)
+swing_low =  input(title="Swing Low", type=input.float, defval=0.0)
+
+degree = input(title="Degree", defval=30, options=[30, 36, 45])
+
+// truncate() truncates a given number
+// to a certain number of decimals
+truncate(number, decimals) =>
+    factor = pow(10, decimals)
+    int(number * factor) / factor
+
+diff_high_low = swing_high - swing_low
+mid_point = swing_high - (diff_high_low / 2)
+
+// Swing High
+line.new(x1=bar_index[1], y1=swing_high, x2=bar_index, y2=swing_high, extend=extend.both, color=color.blue)
+
+// Swing Low
+line.new(x1=bar_index[1], y1=swing_low, x2=bar_index, y2=swing_low, extend=extend.both, color=color.blue)
+
+// 50 Percent Retracement
+line.new(x1=bar_index[1], y1=mid_point, x2=bar_index, y2=mid_point, extend=extend.both, color=color.orange)
+
+var label lbl_SwingHigh = na
+var label lbl_SwingLow = na
+var label lbl_MidPoint = na
+
+var label lbl_ret_1 = na
+var label lbl_ret_2 = na
+var label lbl_ret_3 = na
+var label lbl_ret_4 = na
+var label lbl_ret_5 = na
+var label lbl_ret_6 = na
+var label lbl_ret_7 = na
+var label lbl_ret_8 = na
+var label lbl_ret_9 = na
+var label lbl_ret_10 = na
+
+// Plot High, Low and Mid point
+if barstate.islast
+    label.delete(lbl_SwingHigh)
+    label.delete(lbl_SwingLow)
+    label.delete(lbl_MidPoint)
+    
+    lbl_SwingHigh := label.new(time, swing_high, xloc=xloc.bar_time, text="             (" + tostring(swing_high) + ")", style=label.style_none, textcolor=color.gray)
+    label.set_x(lbl_SwingHigh, label.get_x(lbl_SwingHigh) + 14400000)
+    lbl_SwingLow := label.new(time, swing_low, xloc=xloc.bar_time, text="              (" + tostring(swing_low) + ")", style=label.style_none, textcolor=color.gray)
+    label.set_x(lbl_SwingLow, label.get_x(lbl_SwingLow) + 14400000)
+    lbl_MidPoint := label.new(time, mid_point, xloc=xloc.bar_time, text="              (" + tostring(mid_point) + ")", style=label.style_none, textcolor=color.gray)
+    label.set_x(lbl_MidPoint, label.get_x(lbl_MidPoint) + 14400000)
+
+// Retracement Degree = 30
+if degree == 30
+
+    ret_1 = truncate((mid_point + (diff_high_low * 0.0833)), 2)
+    ret_2 = truncate((mid_point + (diff_high_low * 0.1667)), 2)
+    ret_3 = truncate((mid_point + (diff_high_low * 0.2500)), 2)
+    ret_4 = truncate((mid_point + (diff_high_low * 0.3333)), 2)
+    ret_5 = truncate((mid_point + (diff_high_low * 0.4167)), 2)
+
+    ret_6 = truncate((mid_point - (diff_high_low * 0.0833)), 2)
+    ret_7 = truncate((mid_point - (diff_high_low * 0.1667)), 2)
+    ret_8 = truncate((mid_point - (diff_high_low * 0.2500)), 2)
+    ret_9 = truncate((mid_point - (diff_high_low * 0.3333)), 2)
+    ret_10 = truncate((mid_point - (diff_high_low * 0.4167)), 2)
+
+    // Plot retracement levels
+    line.new(x1=bar_index[1], y1=ret_1, x2=bar_index, y2=ret_1, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_2, x2=bar_index, y2=ret_2, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_3, x2=bar_index, y2=ret_3, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_4, x2=bar_index, y2=ret_4, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_5, x2=bar_index, y2=ret_5, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_6, x2=bar_index, y2=ret_6, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_7, x2=bar_index, y2=ret_7, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_8, x2=bar_index, y2=ret_8, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_9, x2=bar_index, y2=ret_9, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_10, x2=bar_index, y2=ret_10, extend=extend.both, color=color.red)
+
+    // Apply retracement labels
+    if barstate.islast
+    
+        label.delete(lbl_ret_1)
+        label.delete(lbl_ret_2)
+        label.delete(lbl_ret_3)
+        label.delete(lbl_ret_4)
+        label.delete(lbl_ret_5)
+        label.delete(lbl_ret_6)
+        label.delete(lbl_ret_7)
+        label.delete(lbl_ret_8)
+        label.delete(lbl_ret_9)
+        label.delete(lbl_ret_10)
+        
+        lbl_ret_1 := label.new(time, ret_1, xloc=xloc.bar_time, text="              (" + tostring(ret_1) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_1, label.get_x(lbl_ret_1) + 14400000)
+        lbl_ret_2 := label.new(time, ret_2, xloc=xloc.bar_time, text="              (" + tostring(ret_2) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_2, label.get_x(lbl_ret_2) + 14400000)
+        lbl_ret_3 := label.new(time, ret_3, xloc=xloc.bar_time, text="              (" + tostring(ret_3) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_3, label.get_x(lbl_ret_3) + 14400000)
+        lbl_ret_4 := label.new(time, ret_4, xloc=xloc.bar_time, text="              (" + tostring(ret_4) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_4, label.get_x(lbl_ret_4) + 14400000)
+        lbl_ret_5 := label.new(time, ret_5, xloc=xloc.bar_time, text="              (" + tostring(ret_5) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_5, label.get_x(lbl_ret_5) + 14400000)
+        lbl_ret_6 := label.new(time, ret_6, xloc=xloc.bar_time, text="              (" + tostring(ret_6) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_6, label.get_x(lbl_ret_6) + 14400000)
+        lbl_ret_7 := label.new(time, ret_7, xloc=xloc.bar_time, text="              (" + tostring(ret_7) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_7, label.get_x(lbl_ret_7) + 14400000)
+        lbl_ret_8 := label.new(time, ret_8, xloc=xloc.bar_time, text="              (" + tostring(ret_8) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_8, label.get_x(lbl_ret_8) + 14400000)
+        lbl_ret_9 := label.new(time, ret_9, xloc=xloc.bar_time, text="              (" + tostring(ret_9) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_9, label.get_x(lbl_ret_9) + 14400000)
+        lbl_ret_10 := label.new(time, ret_10, xloc=xloc.bar_time, text="             (" + tostring(ret_10) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_10, label.get_x(lbl_ret_10) + 14400000)
+
+// Retracement Degree = 36
+if degree == 36
+
+    ret_1 = truncate((mid_point + (diff_high_low * 0.1)), 2)
+    ret_2 = truncate((mid_point + (diff_high_low * 0.2)), 2)
+    ret_3 = truncate((mid_point + (diff_high_low * 0.3)), 2)
+    ret_4 = truncate((mid_point + (diff_high_low * 0.4)), 2)
+    
+    ret_5 = truncate((mid_point - (diff_high_low * 0.1)), 2)
+    ret_6 = truncate((mid_point - (diff_high_low * 0.2)), 2)
+    ret_7 = truncate((mid_point - (diff_high_low * 0.3)), 2)
+    ret_8 = truncate((mid_point - (diff_high_low * 0.4)), 2)
+    
+
+    // Plot retracement levels
+    line.new(x1=bar_index[1], y1=ret_1, x2=bar_index, y2=ret_1, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_2, x2=bar_index, y2=ret_2, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_3, x2=bar_index, y2=ret_3, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_4, x2=bar_index, y2=ret_4, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_5, x2=bar_index, y2=ret_5, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_6, x2=bar_index, y2=ret_6, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_7, x2=bar_index, y2=ret_7, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_8, x2=bar_index, y2=ret_8, extend=extend.both, color=color.red)
+    
+    // Apply retracement labels
+    if barstate.islast
+        
+        label.delete(lbl_ret_1)
+        label.delete(lbl_ret_2)
+        label.delete(lbl_ret_3)
+        label.delete(lbl_ret_4)
+        label.delete(lbl_ret_5)
+        label.delete(lbl_ret_6)
+        label.delete(lbl_ret_7)
+        label.delete(lbl_ret_8)
+        label.delete(lbl_ret_9)
+        label.delete(lbl_ret_10)
+        
+        lbl_ret_1 := label.new(time, ret_1, xloc=xloc.bar_time, text="              (" + tostring(ret_1) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_1, label.get_x(lbl_ret_1) + 14400000)
+        lbl_ret_2 := label.new(time, ret_2, xloc=xloc.bar_time, text="              (" + tostring(ret_2) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_2, label.get_x(lbl_ret_2) + 14400000)
+        lbl_ret_3 := label.new(time, ret_3, xloc=xloc.bar_time, text="              (" + tostring(ret_3) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_3, label.get_x(lbl_ret_3) + 14400000)
+        lbl_ret_4 := label.new(time, ret_4, xloc=xloc.bar_time, text="              (" + tostring(ret_4) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_4, label.get_x(lbl_ret_4) + 14400000)
+        lbl_ret_5 := label.new(time, ret_5, xloc=xloc.bar_time, text="              (" + tostring(ret_5) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_5, label.get_x(lbl_ret_5) + 14400000)
+        lbl_ret_6 := label.new(time, ret_6, xloc=xloc.bar_time, text="              (" + tostring(ret_6) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_6, label.get_x(lbl_ret_6) + 14400000)
+        lbl_ret_7 := label.new(time, ret_7, xloc=xloc.bar_time, text="              (" + tostring(ret_7) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_7, label.get_x(lbl_ret_7) + 14400000)
+        lbl_ret_8 := label.new(time, ret_8, xloc=xloc.bar_time, text="              (" + tostring(ret_8) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_8, label.get_x(lbl_ret_8) + 14400000)
+        
+// Retracement Degree = 45
+if degree == 45
+
+    ret_1 = truncate((mid_point + (diff_high_low * 0.125)), 2)
+    ret_2 = truncate((mid_point + (diff_high_low * 0.250)), 2)
+    ret_3 = truncate((mid_point + (diff_high_low * 0.375)), 2)
+    
+    ret_4 = truncate((mid_point - (diff_high_low * 0.125)), 2)
+    ret_5 = truncate((mid_point - (diff_high_low * 0.250)), 2)
+    ret_6 = truncate((mid_point - (diff_high_low * 0.375)), 2)
+    
+    // Plot retracement levels
+    line.new(x1=bar_index[1], y1=ret_1, x2=bar_index, y2=ret_1, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_2, x2=bar_index, y2=ret_2, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_3, x2=bar_index, y2=ret_3, extend=extend.both, color=color.lime)
+    line.new(x1=bar_index[1], y1=ret_4, x2=bar_index, y2=ret_4, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_5, x2=bar_index, y2=ret_5, extend=extend.both, color=color.red)
+    line.new(x1=bar_index[1], y1=ret_6, x2=bar_index, y2=ret_6, extend=extend.both, color=color.red)
+    
+    // Apply retracement labels
+    if barstate.islast
+    
+        label.delete(lbl_ret_1)
+        label.delete(lbl_ret_2)
+        label.delete(lbl_ret_3)
+        label.delete(lbl_ret_4)
+        label.delete(lbl_ret_5)
+        label.delete(lbl_ret_6)
+        label.delete(lbl_ret_7)
+        label.delete(lbl_ret_8)
+        label.delete(lbl_ret_9)
+        label.delete(lbl_ret_10)
+        
+        lbl_ret_1 := label.new(time, ret_1, xloc=xloc.bar_time, text="              (" + tostring(ret_1) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_1, label.get_x(lbl_ret_1) + 14400000)
+        lbl_ret_2 := label.new(time, ret_2, xloc=xloc.bar_time, text="              (" + tostring(ret_2) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_2, label.get_x(lbl_ret_2) + 14400000)
+        lbl_ret_3 := label.new(time, ret_3, xloc=xloc.bar_time, text="              (" + tostring(ret_3) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_3, label.get_x(lbl_ret_3) + 14400000)
+        lbl_ret_4 := label.new(time, ret_4, xloc=xloc.bar_time, text="              (" + tostring(ret_4) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_4, label.get_x(lbl_ret_4) + 14400000)
+        lbl_ret_5 := label.new(time, ret_5, xloc=xloc.bar_time, text="              (" + tostring(ret_5) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_5, label.get_x(lbl_ret_5) + 14400000)
+        lbl_ret_6 := label.new(time, ret_6, xloc=xloc.bar_time, text="              (" + tostring(ret_6) + ")", style=label.style_none, textcolor=color.gray)
+        label.set_x(lbl_ret_6, label.get_x(lbl_ret_6) + 14400000)
