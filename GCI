@@ -1,0 +1,131 @@
+
+//@version=6
+indicator('GC', shorttitle = 'GCI', overlay = true)
+
+srLineCount = input.int(title = 'Number of Gann Levels', minval = 1, maxval = 24, defval = 8)
+
+supportLineColor = input.color(color.red, 'Support', group = 'SETTINGS', inline = 'COLOR')
+resistanceLineColor = input.color(color.lime, 'Resistance', group = 'SETTINGS', inline = 'COLOR')
+posX_label = input.int(1, title = 'Pos. Label x-axis', minval = 0, group = 'SETTINGS')
+
+// Milliseconds in a day
+msec_day = 1000 * 60 * 60 * 24
+
+t = time('1440', session.regular)
+is_first = na(t[1]) and not na(t) or t[1] < t
+
+// Truncates a given number to a certain number of decimals
+truncate(number, decimals) =>
+    factor = math.pow(10, decimals)
+    int(number * factor) / factor
+
+// Decimal approximation
+dec(number) =>
+    var int decLen = 0
+    if number <= 10
+        decLen := 5
+        decLen
+    else if number <= 999
+        decLen := 2
+        decLen
+    else if number <= 9999
+        decLen := 1
+        decLen
+    else
+        decLen := 0
+        decLen
+
+// Variable declaration
+var line refLine = na
+
+var line supportLine = na
+var label supportLabel = na
+
+var line resistanceLine = na
+var label resistanceLabel = na
+
+var lineArray = array.new_line()
+var labelArray = array.new_label()
+
+// Plot only for TODAY
+if timenow - time <= msec_day
+
+    // Opening bar of the day
+    if is_first
+
+        // Delete previous lines
+        lineArraySize = array.size(lineArray)
+        for i = 0 to lineArraySize by 1
+            if array.size(lineArray) > 0
+                ln = array.shift(lineArray)
+                line.delete(ln)
+        array.clear(lineArray)
+
+        // Delete previous labels
+        labelArraySize = array.size(labelArray)
+        for i = 0 to labelArraySize by 1
+            if array.size(labelArray) > 0
+                lbl = array.shift(labelArray)
+                label.delete(lbl)
+        array.clear(labelArray)
+
+        // Calculate Gann circle intraday levels on confirmation of the opening bar
+        if barstate.isconfirmed
+
+            supportLevel = 0.0
+            resistanceLevel = 0.0
+            firstSupport = 0.0
+            firstResistance = 0.0
+
+            // Decimal length to be displayed
+            decimalLength = dec(low)
+
+            // Handle smaller prices
+            var int div = 1
+            if low <= 10
+                div := 10000
+                div
+            else
+                div := 1
+                div
+
+            // High and Low of the opening bar
+            refLine := line.new(x1 = bar_index[1], y1 = high, x2 = bar_index, y2 = high, style = line.style_dashed, extend = extend.right, color = color.blue)
+            array.push(lineArray, refLine)
+
+            refLine := line.new(x1 = bar_index[1], y1 = low, x2 = bar_index, y2 = low, style = line.style_dashed, extend = extend.right, color = color.blue)
+            array.push(lineArray, refLine)
+
+            // Calculate Gann Circle Intraday levels    
+            sqrt_low = math.sqrt(low * div)
+            sqrt_high = math.sqrt(high * div)
+
+            for i = 1 to srLineCount by 1
+
+                supportLevel := (sqrt_high - 0.25) * (sqrt_high - 0.25) / div
+                resistanceLevel := (sqrt_low + 0.25) * (sqrt_low + 0.25) / div
+
+                // Keep track of the support and resistance levels generated in the first iteration of the loop
+                if i == 1
+                    firstSupport := supportLevel
+                    firstResistance := resistanceLevel
+                    firstResistance
+
+                // Plot only those support levels which are lower than the first resistance level
+                if supportLevel < firstResistance
+                    supportLine := line.new(x1 = bar_index[1], y1 = supportLevel, x2 = bar_index, y2 = supportLevel, style = line.style_solid, extend = extend.right, color = supportLineColor)
+                    array.push(lineArray, supportLine)
+                    supportLabel := label.new(time + (time - time[1]) * posX_label, supportLevel, xloc = xloc.bar_time, text = '(' + str.tostring(truncate(supportLevel, decimalLength)) + ')', style = label.style_none, textcolor = color.gray)
+                    array.push(labelArray, supportLabel)
+
+                // Plot only those resistance levels which are higher than the first support level
+                if resistanceLevel > firstSupport
+                    resistanceLine := line.new(x1 = bar_index[1], y1 = resistanceLevel, x2 = bar_index, y2 = resistanceLevel, style = line.style_solid, extend = extend.right, color = resistanceLineColor)
+                    array.push(lineArray, resistanceLine)
+                    resistanceLabel := label.new(time + (time - time[1]) * posX_label, resistanceLevel, xloc = xloc.bar_time, text = '(' + str.tostring(truncate(resistanceLevel, decimalLength)) + ')', style = label.style_none, textcolor = color.gray)
+                    array.push(labelArray, resistanceLabel)
+
+                sqrt_high := math.sqrt(supportLevel * div)
+                sqrt_low := math.sqrt(resistanceLevel * div)
+                sqrt_low
+// END
