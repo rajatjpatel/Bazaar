@@ -1,0 +1,34 @@
+//@version=6
+
+indicator('GS', 'GS', overlay = false, max_bars_back = 5000, max_labels_count = 500)
+
+//functions
+xrf(values, length) =>
+    r_val = float(na)
+    if length >= 1
+        for i = 0 to length by 1
+            if na(r_val) or not na(values[i])
+                r_val := values[i]
+                r_val
+    r_val
+
+c0 = (high + low + close) / 3
+a1 = ta.highest(c0, 15)
+a2 = ta.lowest(c0, 15)
+a3 = a1 - a2
+gann_slope = ta.ema((c0 - a2) / a3, 2) * 100
+plot(gann_slope, color = color.new(color.white, 0))
+
+xrf_1 = xrf(gann_slope, 1)
+slow_pump = gann_slope > xrf_1 ? gann_slope : na
+xrf_2 = xrf(gann_slope, 1)
+fast_pump = gann_slope > 20 and gann_slope > xrf_2 ? gann_slope : na
+plot(slow_pump, color = gann_slope > xrf(gann_slope, 1) ? color.rgb(230, 146, 135) : na, linewidth = 2, style = plot.style_linebr)
+plot(slow_pump, color = gann_slope > 20 and gann_slope > xrf(gann_slope, 1) ? color.rgb(245, 8, 8, 27) : na, linewidth = 3, style = plot.style_linebr)
+
+xrf_3 = xrf(gann_slope, 1)
+slow_dump = gann_slope < xrf_3 ? gann_slope : na
+xrf_4 = xrf(gann_slope, 1)
+fast_dump = gann_slope < 20 and gann_slope < xrf_4 ? gann_slope : na
+plot(slow_dump, color = gann_slope < xrf(gann_slope, 1) ? color.rgb(122, 233, 179) : na, linewidth = 2, style = plot.style_linebr)
+plot(slow_dump, color = gann_slope < 20 and gann_slope < xrf(gann_slope, 1) ? color.rgb(3, 122, 7) : na, linewidth = 3, style = plot.style_linebr)
