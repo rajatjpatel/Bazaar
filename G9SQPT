@@ -1,0 +1,268 @@
+
+
+//@version=6
+indicator('G9SQPT', overlay = true)
+
+Cal = input.string(title = 'Calculate Buy/Sell Levels based on :', defval = 'Todays Open', options = ['Todays Open', 'Previous Days High', 'Previous Days Low', 'Previous Days Close'])
+//ShowTable = input(title = 'Show Buy/Sell Levels in a Table', defval = true, group = 'Table Settings')
+ShowBlvl = input(title = 'Show Buy Levels on Chart', defval = true, group = 'Style Settings')
+ShowSlvl = input(title = 'Show Sell Levels on Chart', defval = true, group = 'Style Settings')
+ShowHBlvl = input(title = 'Show Historical Buy Levels on Chart', defval = true, group = 'Style Settings')
+ShowHSlvl = input(title = 'Show Historical Sell Levels on Chart', defval = true, group = 'Style Settings')
+BlvlColor = input.color(color.new(#78fa04, 45), 'Color for Buy Levels', group = 'Style Settings')
+SlvlColor = input.color(color.new(#fa2f04, 45), 'Color for Sell Levels', group = 'Style Settings')
+BTxtColor = input.color(color.new(#78fa04, 35), 'Color for Buy Levels Text', group = 'Style Settings')
+STxtColor = input.color(color.new(#fa2f04, 35), 'Color for Sell Levels Text', group = 'Style Settings')
+line_style = input.string('Dotted', options = ['Dotted', 'Dashed', 'Solid'], title = 'Line Style', group = 'Style Settings')
+label_size = input.string('small', options = ['auto', 'tiny', 'small', 'normal', 'large', 'huge'], title = 'Label size', group = 'Style Settings')
+l_size = label_size == 'auto' ? size.auto : label_size == 'tiny' ? size.tiny : label_size == 'small' ? size.small : label_size == 'normal' ? size.normal : label_size == 'large' ? size.large : size.huge
+position_labels = input.string('Left', 'Labels Position', options = ['Left', 'Right'], group = 'Style Settings')
+TDO = request.security(syminfo.tickerid, 'D', open, lookahead = barmerge.lookahead_on)
+PDH = request.security(syminfo.tickerid, 'D', high[1], lookahead = barmerge.lookahead_on)
+PDL = request.security(syminfo.tickerid, 'D', low[1], lookahead = barmerge.lookahead_on)
+PDC = request.security(syminfo.tickerid, 'D', close[1], lookahead = barmerge.lookahead_on)
+Do = request.security(syminfo.tickerid, 'D', time, lookahead = barmerge.lookahead_on)
+Dc = request.security(syminfo.tickerid, 'D', time_close, lookahead = barmerge.lookahead_on)
+
+
+var lstyle = ''
+var l_pos = 0
+
+if line_style == 'Dotted'
+    lstyle := line.style_dotted
+    lstyle
+else if line_style == 'Dashed'
+    lstyle := line.style_dashed
+    lstyle
+else if line_style == 'Solid'
+    lstyle := line.style_solid
+    lstyle
+
+if position_labels == 'Left'
+    l_pos := Do
+    l_pos
+else if position_labels == 'Right'
+    l_pos := Dc
+    l_pos
+
+float sqCal = 0.00
+
+if Cal == 'Todays Open'
+    sqCal := math.sqrt(TDO)
+    sqCal
+else if Cal == 'Previous Days High'
+    sqCal := math.sqrt(PDH)
+    sqCal
+else if Cal == 'Previous Days Low'
+    sqCal := math.sqrt(PDL)
+    sqCal
+else if Cal == 'Previous Days Close'
+    sqCal := math.sqrt(PDC)
+    sqCal
+
+Bsl = (sqCal - 0.0625) * (sqCal - 0.0625)
+Bat = (sqCal + 0.125) * (sqCal + 0.125)
+Bt1 = (sqCal + 0.25) * (sqCal + 0.25)
+Bt2 = (sqCal + 0.5) * (sqCal + 0.5)
+Bt3 = (sqCal + 0.75) * (sqCal + 0.75)
+Bt4 = (sqCal + 1) * (sqCal + 1)
+Bt5 = (sqCal + 1.25) * (sqCal + 1.25)
+Bt6 = (sqCal + 1.5) * (sqCal + 1.5)
+Bt7 = (sqCal + 1.75) * (sqCal + 1.75)
+Bt8 = (sqCal + 2) * (sqCal + 2)
+
+Ssl = (sqCal + 0.0625) * (sqCal + 0.0625)
+Sat = (sqCal - 0.125) * (sqCal - 0.125)
+St1 = (sqCal - 0.25) * (sqCal - 0.25)
+St2 = (sqCal - 0.5) * (sqCal - 0.5)
+St3 = (sqCal - 0.75) * (sqCal - 0.75)
+St4 = (sqCal - 1) * (sqCal - 1)
+St5 = (sqCal - 1.25) * (sqCal - 1.25)
+St6 = (sqCal - 1.5) * (sqCal - 1.5)
+St7 = (sqCal - 1.75) * (sqCal - 1.75)
+St8 = (sqCal - 2) * (sqCal - 2)
+
+
+if ShowBlvl and timeframe.isintraday
+    pBsl = line.new(Do, Bsl, Dc, Bsl, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pBsl[1])
+    lpBsl = label.new(l_pos, Bsl, text = 'SL for Buy Side : ' + str.tostring(math.round(Bsl, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBsl[1])
+    pBat = line.new(Do, Bat, Dc, Bat, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBat[1])
+    lpBat = label.new(l_pos, Bat, text = 'Buy At or Above : ' + str.tostring(math.round(Bat, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBat[1])
+    pBt1 = line.new(Do, Bt1, Dc, Bt1, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt1[1])
+    lpBt1 = label.new(l_pos, Bt1, text = 'Target 1 : ' + str.tostring(math.round(Bt1, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt1[1])
+    pBt2 = line.new(Do, Bt2, Dc, Bt2, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt2[1])
+    lpBt2 = label.new(l_pos, Bt2, text = 'Target 2 : ' + str.tostring(math.round(Bt2, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt2[1])
+    pBt3 = line.new(Do, Bt3, Dc, Bt3, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt3[1])
+    lpBt3 = label.new(l_pos, Bt3, text = 'Target 3 : ' + str.tostring(math.round(Bt3, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt3[1])
+    pBt4 = line.new(Do, Bt4, Dc, Bt4, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt4[1])
+    lpBt4 = label.new(l_pos, Bt4, text = 'Target 4 : ' + str.tostring(math.round(Bt4, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt4[1])
+    pBt5 = line.new(Do, Bt5, Dc, Bt5, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt5[1])
+    lpBt5 = label.new(l_pos, Bt5, text = 'Target 5 : ' + str.tostring(math.round(Bt5, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt5[1])
+    pBt6 = line.new(Do, Bt6, Dc, Bt6, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt6[1])
+    lpBt6 = label.new(l_pos, Bt6, text = 'Target 6 : ' + str.tostring(math.round(Bt6, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt6[1])
+    pBt7 = line.new(Do, Bt7, Dc, Bt7, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt7[1])
+    lpBt7 = label.new(l_pos, Bt7, text = 'Target 7 : ' + str.tostring(math.round(Bt7, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt7[1])
+    pBt8 = line.new(Do, Bt8, Dc, Bt8, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pBt8[1])
+    lpBt8 = label.new(l_pos, Bt8, text = 'Target 8 : ' + str.tostring(math.round(Bt8, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpBt8[1])
+
+if ShowSlvl and timeframe.isintraday
+    pSsl = line.new(Do, Ssl, Dc, Ssl, xloc.bar_time, color = BlvlColor, style = lstyle, width = 2)
+    line.delete(pSsl[1])
+    lpSsl = label.new(l_pos, Ssl, text = 'SL for Sell Side : ' + str.tostring(math.round(Ssl, 2)), xloc = xloc.bar_time, textcolor = BTxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSsl[1])
+    pSat = line.new(Do, Sat, Dc, Sat, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSat[1])
+    lpSat = label.new(l_pos, Sat, text = 'Sell At or Below : ' + str.tostring(math.round(Sat, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSat[1])
+    pSt1 = line.new(Do, St1, Dc, St1, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt1[1])
+    lpSt1 = label.new(l_pos, St1, text = 'Target 1 : ' + str.tostring(math.round(St1, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt1[1])
+    pSt2 = line.new(Do, St2, Dc, St2, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt2[1])
+    lpSt2 = label.new(l_pos, St2, text = 'Target 2 : ' + str.tostring(math.round(St2, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt2[1])
+    pSt3 = line.new(Do, St3, Dc, St3, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt3[1])
+    lpSt3 = label.new(l_pos, St3, text = 'Target 3 : ' + str.tostring(math.round(St3, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt3[1])
+    pSt4 = line.new(Do, St4, Dc, St4, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt4[1])
+    lpSt4 = label.new(l_pos, St4, text = 'Target 4 : ' + str.tostring(math.round(St4, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt4[1])
+    pSt5 = line.new(Do, St5, Dc, St5, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt5[1])
+    lpSt5 = label.new(l_pos, St5, text = 'Target 5 : ' + str.tostring(math.round(St5, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt5[1])
+    pSt6 = line.new(Do, St6, Dc, St6, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt6[1])
+    lpSt6 = label.new(l_pos, St6, text = 'Target 6 : ' + str.tostring(math.round(St6, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt6[1])
+    pSt7 = line.new(Do, St7, Dc, St7, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt7[1])
+    lpSt7 = label.new(l_pos, St7, text = 'Target 7 : ' + str.tostring(math.round(St7, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt7[1])
+    pSt8 = line.new(Do, St8, Dc, St8, xloc.bar_time, color = SlvlColor, style = lstyle, width = 2)
+    line.delete(pSt8[1])
+    lpSt8 = label.new(l_pos, St8, text = 'Target 8 : ' + str.tostring(math.round(St8, 2)), xloc = xloc.bar_time, textcolor = STxtColor, style = label.style_none, size = l_size)
+    label.delete(lpSt8[1])
+
+plot(timeframe.isintraday and ShowHBlvl ? Bsl : na, title = 'SL for Buy Side', color = color.new(color.gray, 65), style = plot.style_cross, linewidth = 2)
+plot(timeframe.isintraday and ShowHBlvl ? Bat : na, title = 'Buy At or Above', color = color.new(color.green, 60), style = plot.style_cross, linewidth = 2)
+plot(timeframe.isintraday and ShowHBlvl ? Bt1 : na, title = 'Buy Target 1', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt2 : na, title = 'Buy Target 2', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt3 : na, title = 'Buy Target 3', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt4 : na, title = 'Buy Target 4', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt5 : na, title = 'Buy Target 5', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt6 : na, title = 'Buy Target 6', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt7 : na, title = 'Buy Target 7', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHBlvl ? Bt8 : na, title = 'Buy Target 8', color = color.new(color.green, 65), style = plot.style_circles, linewidth = 1)
+
+plot(timeframe.isintraday and ShowHSlvl ? Ssl : na, title = 'SL for Sell Side', color = color.new(color.gray, 65), style = plot.style_cross, linewidth = 2)
+plot(timeframe.isintraday and ShowHSlvl ? Sat : na, title = 'Sell At or Above', color = color.new(color.red, 60), style = plot.style_cross, linewidth = 2)
+plot(timeframe.isintraday and ShowHSlvl ? St1 : na, title = 'Sell Target 1', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St2 : na, title = 'Sell Target 2', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St3 : na, title = 'Sell Target 3', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St4 : na, title = 'Sell Target 4', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St5 : na, title = 'Sell Target 5', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St6 : na, title = 'Sell Target 6', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St7 : na, title = 'Sell Target 7', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+plot(timeframe.isintraday and ShowHSlvl ? St8 : na, title = 'Sell Target 8', color = color.new(color.red, 65), style = plot.style_circles, linewidth = 1)
+
+// ---- Table Settings Start {----//
+max = 120 //Maximum Length
+min = 10 //Minimum Length
+dash_loc = input.session('Top Right', 'Table Location', options = ['Top Right', 'Bottom Right', 'Top Left', 'Bottom Left', 'Middle Right', 'Bottom Center'], group = 'Table Settings')
+
+text_size = input.session('Normal', 'Table Size', options = ['Tiny', 'Small', 'Normal', 'Large'], group = 'Table Settings')
+row_col = color.blue
+col_col = color.blue
+txt_col = color.white
+
+
+// ---- Table Settings End ----}//
+//-------------- Table code Start {-------------------//
+
+//---- Table Position & Size code start {----//
+var table_position = dash_loc == 'Top Left' ? position.top_left : dash_loc == 'Bottom Left' ? position.bottom_left : dash_loc == 'Middle Right' ? position.middle_right : dash_loc == 'Bottom Center' ? position.bottom_center : dash_loc == 'Top Right' ? position.top_right : position.bottom_right
+
+var table_text_size = text_size == 'Tiny' ? size.tiny : text_size == 'Small' ? size.small : text_size == 'Normal' ? size.normal : size.large
+
+var t = table.new(table_position, 14, math.abs(max - min) + 2, frame_color = color.new(#000000, 0), frame_width = 1, border_color = color.new(#000000, 0), border_width = 1)
+//---- Table Position & Size code end ----}//
+
+//---- Table Column & Rows code start {----//
+// if ShowTable and barstate.islast and timeframe.isintraday
+//     //---- Table Main Column Headers code start {----//
+//     table.cell(t, 1, 0, 'Intraday', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 2, 0, 'Buy/Sell', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 3, 0, 'Levels', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 4, 0, 'using', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 5, 0, 'Gann Angles', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 6, 0, 'based on', text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 7, 0, str.tostring(Cal), text_color = color.new(#339cff, 15), text_size = table_text_size, bgcolor = color.new(#339cff, 80))
+//     table.cell(t, 1, 1, ticker.standard(syminfo.ticker), text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 2, 1, 'Entry level', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 3, 1, 'Stop Loss', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 4, 1, 'Target 1', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 5, 1, 'Target 2', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 6, 1, 'Target 3', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 7, 1, 'Target 4', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 8, 1, 'Target 5', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 9, 1, 'Target 6', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 10, 1, 'Target 7', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 11, 1, 'Target 8', text_color = color.new(color.blue, 40), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+
+// //---- Table Main Column Headers code end ----}//
+
+//     //---- Display Buying data code start {----// 
+//     table.cell(t, 1, 2, 'Buying', text_color = color.new(#78fa04, 25), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 2, 2, str.tostring(Bat, '#.##'), text_color = color.new(#78fa04, 25), text_size = table_text_size, bgcolor = color.new(close >= Bat and close < Bt1 ? #000000 : #78fa04, 85))
+//     table.cell(t, 3, 2, str.tostring(Bsl, '#.##'), text_color = color.new(#fa2f04, 35), text_size = table_text_size, bgcolor = color.new(close >= Bsl and close < Bat ? #000000 : #fa2f04, 85))
+//     table.cell(t, 4, 2, str.tostring(Bt1, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt1 and close < Bt2 ? #000000 : #78fa04, 85))
+//     table.cell(t, 5, 2, str.tostring(Bt2, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt2 and close < Bt3 ? #000000 : #78fa04, 85))
+//     table.cell(t, 6, 2, str.tostring(Bt3, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt3 and close < Bt4 ? #000000 : #78fa04, 85))
+//     table.cell(t, 7, 2, str.tostring(Bt4, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt4 and close < Bt5 ? #000000 : #78fa04, 85))
+//     table.cell(t, 8, 2, str.tostring(Bt5, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt5 and close < Bt6 ? #000000 : #78fa04, 85))
+//     table.cell(t, 9, 2, str.tostring(Bt6, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt6 and close < Bt7 ? #000000 : #78fa04, 85))
+//     table.cell(t, 10, 2, str.tostring(Bt7, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt7 and close < Bt8 ? #000000 : #78fa04, 85))
+//     table.cell(t, 11, 2, str.tostring(Bt8, '#.##'), text_color = color.new(#78fa04, 45), text_size = table_text_size, bgcolor = color.new(close >= Bt8 ? #000000 : #78fa04, 85))
+//     //---- Display Buying data code end ----}//
+
+//     //---- Display Selling data code start {----// 
+//     table.cell(t, 1, 3, 'Selling', text_color = color.new(#fa2f04, 25), text_size = table_text_size, bgcolor = color.new(color.blue, 80))
+//     table.cell(t, 2, 3, str.tostring(Sat, '#.##'), text_color = color.new(#fa2f04, 25), text_size = table_text_size, bgcolor = color.new(close <= Sat and close > St1 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 3, 3, str.tostring(Ssl, '#.##'), text_color = color.new(#78fa04, 35), text_size = table_text_size, bgcolor = color.new(close <= Ssl and close > Sat ? #000000 : #78fa04, 85))
+//     table.cell(t, 4, 3, str.tostring(St1, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St1 and close > St2 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 5, 3, str.tostring(St2, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St2 and close > St3 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 6, 3, str.tostring(St3, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St3 and close > St4 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 7, 3, str.tostring(St4, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St4 and close > St5 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 8, 3, str.tostring(St5, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St5 and close > St6 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 9, 3, str.tostring(St6, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St6 and close > St7 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 10, 3, str.tostring(St7, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St7 and close > St8 ? #000000 : #fa2f04, 85))
+//     table.cell(t, 11, 3, str.tostring(St8, '#.##'), text_color = color.new(#fa2f04, 45), text_size = table_text_size, bgcolor = color.new(close <= St8 ? #000000 : #fa2f04, 85))
+// //---- Display Selling data code end ----}//
+
+// //---- Table Column & Rows code end ----}//
+
+// //-------------- Table code end -------------------}//
