@@ -1,0 +1,512 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © shoonya0000
+
+
+//@version=5
+library("VolZigZag", true)
+
+GetHighestSince(condition, series=high) =>
+    var float highestValueSince = na
+    if condition or series > highestValueSince
+        highestValueSince := series
+    // => series
+    highestValueSince
+
+GetLowestSince(condition, series=low) =>
+    var float lowestValueSince = na
+    if condition or series < lowestValueSince
+        lowestValueSince := series
+    // => series
+    lowestValueSince
+
+// Function to safely retrieve an element from an array based on its index
+// This function ensures safe access to array elements by checking index against array size
+array_get(array_id, array_index, else_val = 0) =>
+    get_value = array.size(array_id) > array_index ? array.get(array_id, array_index) : na(else_val) ? na : else_val
+    // => series
+    get_value
+
+// Function for extracting an integer wave pattern from an array of numbers/prices.
+// The integer wave pattern represents the sequence of numbers in the array based on their relative positions.
+// get int wave pattern function
+get_int_wave_pattern(array_id, size) =>
+    int_i_wave_pattern = 0.0
+    if array.size(array_id) > size
+        last_i_array = array.slice(array_id, 0, size)    
+        copy_i_array = array.copy(last_i_array)
+        array.sort(copy_i_array)
+        for i = 0 to size - 1
+            int_i_wave_pattern += (array.indexof(copy_i_array, array_get(last_i_array, i)) + 1) * math.pow(10, i)
+    // => series
+    int_i_wave_pattern
+
+// creates array from series if condition is true
+create_array_from_series_if(series_, condition_) =>
+    var float[] _array_ = array.new_float(0)
+    if condition_
+        array.unshift(_array_, series_)
+    // => float array
+    _array_
+
+// creates pattern array from price array
+create_int_array_pattern(Y_price_array, i_Y1_pattern_size) =>
+    int_X_pattern = get_int_wave_pattern(Y_price_array, i_Y1_pattern_size)
+    int_X_pattern_array = create_array_from_series_if(int_X_pattern, int_X_pattern != int_X_pattern[1])
+    // => float array
+    int_X_pattern_array
+
+// total count of a defined value in a existing array
+countValue_inArray(array_id, value) =>
+    count = 0
+    i_loop =  array.size(array_id) == 0 ? 0 : array.size(array_id) - 1
+    for i = 0 to array.size(array_id)
+        if array_get(array_id, i) == value
+            count := count + 1
+    count
+
+// update array values
+update_ZigZag_array(array_id, value) =>
+    updated_array = array.copy(array_id)
+    array.unshift(updated_array, value)
+    updated_array
+
+// __________________________________________________________________________________________________________________________________
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// EXPORT FUNCTIONS
+export getValues_andStyling_VolatilityZigZag_byBrettkind(
+                                     bool hl_src,
+                                     float SOURCE,
+                                     int length,
+                                     float min_dev_input,
+                                     int pvt_length,
+                                     float stdev_fctr,
+                                     bool ZigZag,
+                                     color zz_color,
+                                     int zz_width,
+                                     bool zz_devline,
+                                     bool zz_points,
+                                     bool zz_alert_sign,
+                                     bool ZZ_Label,
+                                     color ZZ_Label_clr,
+                                     bool rev_text,
+                                     bool zz_bars_text,
+                                     bool pcabs_text,
+                                     bool avg_pcabs_text,
+                                     bool pcrel_text,
+                                     bool avg_pcrel_text,
+                                     bool vol_text,
+                                     bool avg_vol_text,
+                                     string text_size,
+                                     string input_currency
+                                     ) =>
+                                        
+    // ta.bb() allows series int as length
+    [SMA, UPPER_SMA, LOWER_SMA] = ta.bb(SOURCE, length, 1)
+    // standard deviation
+    vola = stdev_fctr * (UPPER_SMA - SMA)
+    // min deviation
+    min_dev = SOURCE * min_dev_input/100
+    // high source
+    HIGH_ = hl_src ? high : SOURCE
+    // low source
+    LOW_ = hl_src ? low : SOURCE
+    // tr and atr are needed to avoid double simultaneous high/low peaks
+    // true range
+    tr_highest = ta.highest(HIGH_, pvt_length) // 2
+    tr_lowest = ta.lowest(LOW_, pvt_length) // 2
+    tr = (na(tr_highest) ? HIGH_ : tr_highest) - (na(tr_lowest) ? LOW_ : tr_lowest)
+    // average true range calculated with ta.bb() (allows series int as length)
+    [atr, _, _] = ta.bb(tr, length, 1)
+    // Deviation criterion for new ZigZag
+    deviation = math.max(vola, tr, atr, min_dev)
+    // IPO Opening Price
+    var IPO_OPEN = open
+    // All Time High and Low
+    ATH = ta.max(HIGH_)
+    ATL = ta.min(LOW_)
+    // Querying the currency of the chart
+    chartCurrency = input_currency // syminfo.currency
+    // Line coordinates
+    var int x1 = 0
+    var float Y1 = IPO_OPEN
+    var int x2 = 0
+    var float Y2 = IPO_OPEN
+    // __________________________________________________________________________________________________________________________________
+
+    // Find the first/next ZigZag Pivot - Conditions
+    // Is ... bigger than deviation
+    // ... High deviation from IPO ...
+    ipo_high_diff = (HIGH_ - IPO_OPEN) > deviation
+    // ... Low deviation ... ...
+    ipo_low_diff = (IPO_OPEN - LOW_) > deviation
+    // no first ZigZag Pivot was found
+    var bool no_first_zigzag = true
+    // was the last ZigZag Pivot a high-Pivot
+    var bool last_zigzag_high = false
+    // ... a low-Pivot
+    var bool last_zigzag_low = false
+    // a new Pivot was found
+    new_zigzag = ta.change(last_zigzag_high) or ta.change(last_zigzag_low)
+    // a Pivot was updated
+    bool y2_changed = ta.change(Y2) != 0
+    bool x2_changed = ta.change(x2) != 0
+    update_zigzag = y2_changed or x2_changed
+    // __________________________________________________________________________________________________________________________________
+
+    // find the first Zig Zag Pivot
+    if (ipo_low_diff or ipo_high_diff) and no_first_zigzag
+        no_first_zigzag := false
+        x2 := bar_index
+        Y2 := ipo_high_diff ? ATH : ipo_low_diff ? ATL : 9999
+        if ipo_high_diff
+            last_zigzag_high := true
+        if ipo_low_diff
+            last_zigzag_low := true
+    // __________________________________________________________________________________________________________________________________
+
+    // update or find the next Zig Zag Pivot
+    // update high Zig Zag Pivot
+    new_or_update_zigzag = new_zigzag or update_zigzag
+    GHHS = GetHighestSince(new_or_update_zigzag, HIGH_)
+    GLLS = GetLowestSince(new_or_update_zigzag, LOW_)
+    if last_zigzag_high and GHHS > Y2 and GHHS == HIGH_
+        x2 := bar_index
+        Y2 := HIGH_
+    // update low Zig Zag Pivot
+    if last_zigzag_low and GLLS < Y2 and GLLS == LOW_
+        x2 := bar_index
+        Y2 := LOW_
+    // find the next Zig Zag Pivot
+    high_zigzag_dev = GHHS - Y2
+    low_zigzag_dev = Y2 - GLLS
+    if last_zigzag_high and low_zigzag_dev > deviation and LOW_ == GLLS
+        x1 := x2[1]
+        Y1 := Y2[1]
+        x2 := bar_index
+        Y2 := LOW_
+        last_zigzag_high := false
+        last_zigzag_low := true
+    if last_zigzag_low and high_zigzag_dev > deviation and HIGH_ == GHHS
+        x1 := x2[1]
+        Y1 := Y2[1]
+        x2 := bar_index
+        Y2 := HIGH_
+        last_zigzag_high := true
+        last_zigzag_low := false
+    // __________________________________________________________________________________________________________________________________
+
+    // ZigZag Pivot Lines
+    // create x/y - Arrays
+    var int[] x1_array = array.new_int(0)
+    var float[] Y1_array = array.new_float(0)
+
+    // Variables for getting the coordinates-values
+    var int get_x1 = 0
+    var float get_Y1 = open
+    var int get_x2 = 0
+    var float get_Y2 = open
+
+    // Draw the ZigZag Lines
+    // Index for the first Line-Point
+    bs_index = ta.barssince(new_zigzag) +1
+    if ta.change(Y1) != 0
+        L1 = line.new(x1[bs_index], Y1[bs_index], x1, Y1, color = ZigZag ? zz_color : color.rgb(0, 0, 0, 100), width = zz_width)
+        array.unshift(x1_array, x1) 
+        array.unshift(Y1_array, Y1) // Y1 + 0.0001 
+        get_x1 := line.get_x1(L1)
+        get_Y1 := line.get_y1(L1)
+        get_x2 := line.get_x2(L1)
+        get_Y2 := line.get_y2(L1)
+    // Draw or Update the current ZigZag Line
+
+    if barstate.islast and ZigZag
+        L2 = line.new(x1, Y1, x2, Y2, color = zz_color, width = zz_width, style = line.style_arrow_right)
+    // __________________________________________________________________________________________________________________________________
+
+    // included the all bars from x1 to x2
+    // volume of the peak bars is included in both ZigZag-Labels before and after."
+    number_of_bars = get_x2 - get_x1 + 1
+    number_of_bars_Y2 = x2 - x1 + 1
+    // numbers of bars array / bars counter array / type float instead of int because of function update_array()
+    varip int[] number_of_bars_array = array.new_int()
+    if ta.change(number_of_bars) != 0
+        array.unshift(number_of_bars_array, number_of_bars)
+
+    // Calculate the sum and average (per bar) of the Volume
+    sum_vol = 0.0
+    // Loop over the bars between x1 and x2
+    for i = bar_index - get_x2 to bar_index - get_x1
+        sum_vol += volume[i]
+    avg_vol = sum_vol / number_of_bars
+    sum_vol_Y2 = 0.0
+    // Loop over the bars between x1 and x2
+    for i = bar_index - x2 to bar_index - x1
+        sum_vol_Y2 += volume[i]
+    avg_vol_Y2 = sum_vol_Y2 / number_of_bars_Y2
+    // sum volume array
+    var float[] sum_vol_array = array.new_float(0)
+    if ta.change(sum_vol) != 0
+        array.unshift(sum_vol_array, sum_vol)
+    // average volume array
+    var float[] avg_vol_array = array.new_float(0)
+    if ta.change(avg_vol) != 0
+        array.unshift(avg_vol_array, avg_vol)
+
+    // Calculate the price change between Y1 and Y2
+    price_change_rel = (get_Y2 / get_Y1 - 1) * 100
+    price_change_rel_Y2 = (Y2 / Y1 - 1) * 100
+    price_change_abs = get_Y2 - get_Y1
+    price_change_abs_Y2 = Y2 - Y1
+    // absolute price change array
+    var float[] price_change_abs_array = array.new_float(0)
+    if ta.change(price_change_abs) != 0
+        array.unshift(price_change_abs_array, price_change_abs)
+    // relative/percentage price change array
+    var float[] price_change_rel_array = array.new_float(0)
+    if ta.change(price_change_rel) != 0
+        array.unshift(price_change_rel_array, price_change_rel)
+    // Calculate the average price change between Y1 and Y2
+    // growth rate per bar
+    exp_price_change_rel = math.max(get_x2 - get_x1, 1)
+    avg_price_change_rel = (math.pow( price_change_rel / 100 + 1 , 1 / exp_price_change_rel) - 1) * 100
+    exp_price_change_rel_Y2 = math.max(x2 - x1, 1)
+    avg_price_change_rel_Y2 = (math.pow( price_change_rel_Y2 / 100 + 1 , 1 / exp_price_change_rel_Y2) - 1) * 100
+    avg_price_change_abs = price_change_abs / number_of_bars
+    avg_price_change_abs_Y2 = price_change_abs_Y2 / number_of_bars_Y2
+    // mean absolute price change per bar
+    var float[] avg_price_change_abs_array = array.new_float(0)
+    if ta.change(avg_price_change_abs) != 0
+        array.unshift(avg_price_change_abs_array, avg_price_change_abs)
+    // growth rate per bar array / mean relative/percentage price change per bar
+    var float[] avg_price_change_rel_array = array.new_float(0)
+    if ta.change(avg_price_change_rel) != 0
+        array.unshift(avg_price_change_rel_array, avg_price_change_rel)
+    // __________________________________________________________________________________________________________________________________
+
+        // // Label Text
+    lbl_break_1 = (rev_text or zz_bars_text) and (zz_bars_text or vol_text or avg_vol_text or pcrel_text or avg_pcrel_text or pcabs_text or avg_pcabs_text) ? "\n" : ""
+    lbl_break_2 = (pcabs_text or avg_pcabs_text) and (zz_bars_text or vol_text or avg_vol_text or pcrel_text or avg_pcrel_text) ? "\n" : "" 
+    lbl_break_3 = (pcrel_text or avg_pcrel_text) and (zz_bars_text or vol_text or avg_vol_text) ? "\n" : ""
+
+    // Label Text Y1
+    rev_price_text = rev_text ? str.tostring( math.round( Y1, 2 ) ) + " " + chartCurrency : ""
+    price_change_abs_text = pcabs_text ? str.tostring( math.round( price_change_abs, 2 ) ) + " " + chartCurrency : ""
+    avg_price_change_abs_text = (avg_pcabs_text? " (" + str.tostring( math.round( avg_price_change_abs,2) ) + " " + chartCurrency + ")": "")
+    price_change_rel_text = pcrel_text ? str.tostring( math.round( price_change_rel, 2 ) ) + " %" : ""
+    avg_price_change_rel_text = (avg_pcrel_text? " (" + str.tostring( math.round( avg_price_change_rel,2) ) + " %" + ")": "")
+    volumen_text = vol_text ? str.tostring(sum_vol, format.volume) : ""
+    avg_volumen_text = (avg_vol_text? " (" + str.tostring(avg_vol, format.volume) + ")": "")
+    zz_Bars_text = zz_bars_text ? (rev_text ? " | " : "") + str.tostring( number_of_bars ) + " Bars" : ""
+
+    label_text = rev_price_text + zz_Bars_text +
+             lbl_break_1 + price_change_abs_text + 
+             avg_price_change_abs_text + lbl_break_2 + 
+             price_change_rel_text + avg_price_change_rel_text + lbl_break_3 +
+             volumen_text + avg_volumen_text
+
+    // Label Text Y2
+    rev_price_text := rev_text ? str.tostring( math.round( Y2, 2 ) ) + " " + chartCurrency : ""
+    price_change_abs_text := pcabs_text ? str.tostring( math.round( price_change_abs_Y2, 2 ) ) + " " + chartCurrency : ""
+    avg_price_change_abs_text := (avg_pcabs_text? " (" + str.tostring( math.round( avg_price_change_abs_Y2,2) ) + " " + chartCurrency + ")": "")
+    price_change_rel_text := pcrel_text ? str.tostring( math.round( price_change_rel_Y2, 2 ) ) + " %" : ""
+    avg_price_change_rel_text := (avg_pcrel_text? " (" + str.tostring( math.round( avg_price_change_rel_Y2,2) ) + " %" + ")": "")
+    volumen_text := vol_text ? str.tostring(sum_vol_Y2, format.volume) : ""
+    avg_volumen_text := (avg_vol_text? " (" + str.tostring(avg_vol_Y2, format.volume) + ")": "")
+    zz_Bars_text := zz_bars_text ? (rev_text ? " | " : "") + str.tostring( number_of_bars_Y2 ) + " Bars" : ""
+
+    label_text_2 = rev_price_text + zz_Bars_text + lbl_break_1 +  
+             price_change_abs_text + avg_price_change_abs_text + lbl_break_2 + 
+             price_change_rel_text + avg_price_change_rel_text + lbl_break_3 +
+             volumen_text + avg_volumen_text
+    // __________________________________________________________________________________________________________________________________
+    
+    // transparent label color
+    lbl_clr = color.rgb(0, 0, 0, 100)
+    // Draw ZigZag Labels Y1
+    if ZZ_Label and ta.change(x1) != 0
+        ZZ_myLabel = label.new(x1, Y1, label_text, color = lbl_clr, size= text_size, textcolor = ZZ_Label_clr)
+        label.set_textcolor(ZZ_myLabel, ZZ_Label_clr)
+        if last_zigzag_low
+            label.set_style(ZZ_myLabel, label.style_label_down)
+        else if last_zigzag_high
+            label.set_style(ZZ_myLabel, label.style_label_up)
+
+    // Draw ZigZag Labels Y2
+    if ZZ_Label and barstate.islast
+        ZZ_myLabel_2 = label.new(x2, Y2, label_text_2, color = lbl_clr, size= text_size, textcolor = ZZ_Label_clr)
+        label.set_textcolor(ZZ_myLabel_2, ZZ_Label_clr)
+        if last_zigzag_high
+            label.set_style(ZZ_myLabel_2, label.style_label_down)
+        else if last_zigzag_low
+            label.set_style(ZZ_myLabel_2, label.style_label_up)
+
+    // Draw Symbol Points
+    if zz_points and ta.change(x1) != 0
+        points = label.new(x1, Y1, "⦿", textcolor = zz_color, color = lbl_clr, size = size.small, style = label.style_label_center)
+
+    // Draw Symbol Points on Close
+    // Label the alertcondition title='New ZigZag'
+    if ZigZag and ta.change(x1) != 0 and zz_alert_sign
+        points = label.new(bar_index, Y1, "◯", textcolor = color.black, color = lbl_clr, size = size.small, style = label.style_label_center)
+
+    // __________________________________________________________________________________________________________________________________
+
+    // Deviation H-Line
+    // if high or low crossover this line/price/deviation a new ZigZag Pivot will emerge
+    dev_new_Y2_2 = last_zigzag_high ? GLLS : GHHS
+    // fixed...
+    dev_new_Y2 = last_zigzag_high ? math.min( Y2 - deviation , dev_new_Y2_2) : math.max( Y2 + deviation , dev_new_Y2_2)
+    //
+    if ZigZag and barstate.islast and zz_devline
+        new_zz_h_line = line.new(bar_index-2, dev_new_Y2, bar_index+2, dev_new_Y2, color = color.gray, style = line.style_dotted)
+
+    // Deviation H-Line Label
+    if ZZ_Label and barstate.islast and ZigZag and barstate.islast and zz_devline
+        ZZ_myLabel_2 = label.new(bar_index+2, dev_new_Y2, str.tostring( math.round( deviation *100 / Y2) ) + " %", 
+         color = lbl_clr, size=size.small, textcolor = color.gray, style = label.style_label_left)
+
+    //__________________________________________________________________________________________________________________________________
+
+    // EXPORT values
+    [x1, x2, x1_array, Y1, Y2, Y1_array, 
+     deviation, dev_new_Y2, new_zigzag,
+     last_zigzag_high, last_zigzag_low,
+     number_of_bars_Y2, number_of_bars_array, 
+     price_change_abs_Y2, price_change_abs_array,
+     price_change_rel_Y2, price_change_rel_array,     
+     avg_price_change_abs_Y2, avg_price_change_abs_array,
+     avg_price_change_rel_Y2, avg_price_change_rel_array,
+     sum_vol_Y2, sum_vol_array,
+     avg_vol_Y2, avg_vol_array]
+//__________________________________________________________________________________________________________________________________
+
+export getStatisticTable_VolatilityZigZag_byBrettkind(int x1, array<float> Y1_array, array<int> number_of_bars_array, bool draw_tbl) =>
+    // Data for Statistic Table
+    // statistical data
+    late_zz_signal_array = create_array_from_series_if(bar_index - x1, ta.change(x1) != 0)
+    avg_late_zz_signal = array.avg(late_zz_signal_array)
+
+    avg_number_of_bars = array.avg(number_of_bars_array)
+
+    int3_wave_pattern = create_int_array_pattern(Y1_array, 3)
+    // relative occurrence of higher-highs
+    rel_higher_high = countValue_inArray(int3_wave_pattern, 213) / (countValue_inArray(int3_wave_pattern, 213) + countValue_inArray(int3_wave_pattern, 312))
+    rel_lower_high = countValue_inArray(int3_wave_pattern, 312) / (countValue_inArray(int3_wave_pattern, 213) + countValue_inArray(int3_wave_pattern, 312))
+    rel_higher_low = countValue_inArray(int3_wave_pattern, 132) / (countValue_inArray(int3_wave_pattern, 132) + countValue_inArray(int3_wave_pattern, 231))
+    rel_lower_low = countValue_inArray(int3_wave_pattern, 231) / (countValue_inArray(int3_wave_pattern, 132) + countValue_inArray(int3_wave_pattern, 231))
+    //__________________________________________________________________________________________________________________________________
+    // draw statistik table
+    var table tbl = table.new(position.bottom_right, 2, 6, bgcolor = #00000000, border_color = #00000000)
+    // Tabelle füllen
+    if draw_tbl
+        table.cell(tbl, 0, 0, "Ø Late Signal"), table.cell(tbl, 1, 0, str.tostring(math.round(avg_late_zz_signal)) + " Bars")
+        table.cell(tbl, 0, 1, "Ø Bar Count"), table.cell(tbl, 1, 1, str.tostring(math.round(avg_number_of_bars)) + " Bars")
+        table.cell(tbl, 0, 2, "Higher-High"), table.cell(tbl, 1, 2, str.tostring(math.round(rel_higher_high *100,1), format.percent))
+        table.cell(tbl, 0, 3, "Lower-High"), table.cell(tbl, 1, 3, str.tostring(math.round(rel_lower_high *100,1), format.percent))
+        table.cell(tbl, 0, 4, "Higher-Low"), table.cell(tbl, 1, 4, str.tostring(math.round(rel_higher_low *100,1), format.percent))
+        table.cell(tbl, 0, 5, "Lower-Low"), table.cell(tbl, 1, 5, str.tostring(math.round(rel_lower_low *100,1), format.percent))
+//__________________________________________________________________________________________________________________________________
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// INPUTS FOR THE INDICATOR
+
+// INPUTS ZigZag Calculation
+hl_src = input.bool(true, "use High/Low", inline="0", group = "ZigZag Calculation",
+             tooltip = "High or Low is the default source.")
+SOURCE = input.source(close, "| Else", inline="0", group = "ZigZag Calculation")
+// dynamic length
+len_def = input.bool(true, "default Length", inline="1", group = "ZigZag Calculation", 
+             tooltip = "Default length is one year in daily, weekly or monthly timeframe. In other timeframes the default is 300.")
+len_cus = input.int(200, "| Custom", 10, inline="1", group = "ZigZag Calculation")
+// default Year
+length = len_def? (timeframe.ismonthly? 12 : timeframe.isweekly? 52 : timeframe.isdaily?  251 : timeframe.isintraday ? 300 : 300) : len_cus
+length := math.min(length, bar_index + 1)
+// min deviation
+min_pvt_length = input.int(2, "minimum ZigZag candles length", minval = 1, maxval = 5, step = 1, inline = "2", group = "ZigZag Calculation",
+             tooltip = "The minimum number of bars or candles needed to confirm a trend change. 
+                         The higher the count, the more the Deviation condition is suppressed. 
+                         A Count of '1' is more pricise, but for smoother results, a number of '2' is recommended.")
+// min deviation
+min_dev_input = input.float(0.00, "minimum ZigZag deviation (%)", minval = 0, maxval = 100, step = 1, inline = "3", group = "ZigZag Calculation",
+             tooltip = "The ZigZag is calculated using standard deviation, true range, average true range, and the minimum ZigZag deviation.")
+// use Sstdev Factor
+stdev_fctr = input.float(1.0, "Standard Deviation Factor", minval = 0.1, maxval = 3.0, step= 0.1, inline = "4", group = "ZigZag Calculation", 
+             tooltip = "Multiplicates the Standard Deviation with this factor.")
+
+// INPUTS ZigZag Styling
+ZigZag = input.bool(true, "Draw ZigZag |", group = "ZigZag Styling", inline = "1")
+zz_devline = input.bool(true, "Deviation Line", group = "ZigZag Styling", inline = "1",
+             tooltip = "if the ZigZag source crosses the Deviation-Line a new fixed Pivot Point ⦿ will emerge")
+zz_color = input.color(color.yellow, "Line-Color", group = "ZigZag Styling", inline = "2")
+zz_width = input.int(1, "linewidth", group = "ZigZag Styling", inline = "2", minval = 0, maxval = 10)
+zz_points = input.bool(true, "Fixed Pivot ⦿ |", group = "ZigZag Styling", inline = "3",
+             tooltip = "⦿ representing a fixed ZigZag Pivot Point")
+zz_alert_sign = input.bool(true, "Alert Point ◯", group = "ZigZag Styling", inline = "3",
+             tooltip = "⦿ representing a fixed ZigZag Pivot Point \n◯ representing the occurrence when a fixed Pivot emerges")
+
+// INPUTS ZigZag Labeling
+input_currency = syminfo.currency
+ZZ_Label = input.bool(true, "Draw Labels |", group = "ZigZag Labeling", inline = "0")
+ZZ_Label_clr = input.color(color.rgb(255, 255, 255), "Text-Color", group = "ZigZag Labeling", inline = "0")
+rev_text = input.bool(true, "Reversal Price |", group = "ZigZag Labeling", inline = "1")
+zz_bars_text = input.bool(true, "Counter", group = "ZigZag Labeling", inline = "1",
+             tooltip = "counts the bars between ⦿, peak bars are included")
+pcabs_text = input.bool(true, "Price Change |", group = "ZigZag Labeling", inline = "2")
+avg_pcabs_text = input.bool(true, "Ø", group = "ZigZag Labeling", inline = "2",
+             tooltip = "arithmetic mean")
+pcrel_text = input.bool(true, "Percentage Change |", group = "ZigZag Labeling", inline = "3", 
+             tooltip = "Compound Growth Rate per bar")
+avg_pcrel_text = input.bool(true, "%", group = "ZigZag Labeling", inline = "3")
+vol_text = input.bool(true, "Volume |", group = "ZigZag Labeling", inline = "4")
+avg_vol_text = input.bool(true, "Ø", group = "ZigZag Labeling", inline = "4",
+             tooltip = "volume of the peak bars are included. \narithmetic mean")
+text_size = input.string("small", "Label Text-Size", options = ["auto", "tiny", "small", "normal", "large", "huge"], group = "ZigZag Labeling", inline = "5")
+text_size := text_size == "auto" ? size.auto : text_size == "tiny" ? size.tiny : text_size == "small" ? size.small : 
+             text_size == "normal" ? size.normal : text_size == "large" ? size.large : size.huge
+
+// statistic table
+draw_tbl = input.bool(true, "Draw Table", group = "Statistic Table", inline = "0", 
+             tooltip = "The first row represents the average length of bars following the emergence of a new ZigZag pattern.
+                         \nThe Second represents the average Count or bar length of the ZigZag lines.  
+                         \nBelow are the probabilities of the occurrence of each wave pattern.")
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Test / Plot / Draw / Get Values from Export-Functions
+
+// ZigZag Line and Label Drawings and get calculated values
+[x1, x2, x1_array, Y1, Y2, Y1_array,
+ deviation, dev_Y2_series, new_zigzag,
+ last_zigzag_high, last_zigzag_low,
+ number_of_bars_Y2, number_of_bars_array, 
+ price_change_abs_Y2, price_change_abs_array,
+ price_change_rel_Y2, price_change_rel_array,
+ avg_price_change_abs_Y2, avg_price_change_abs_array,
+ avg_price_change_rel_Y2, avg_price_change_rel_array,
+ sum_vol_Y2, sum_vol_array,
+ avg_vol_Y2, avg_vol_array] = getValues_andStyling_VolatilityZigZag_byBrettkind(hl_src, SOURCE, length, min_dev_input, min_pvt_length, stdev_fctr, ZigZag, zz_color, zz_width, 
+                                                                                 zz_devline, zz_points, zz_alert_sign, ZZ_Label, ZZ_Label_clr, rev_text, zz_bars_text,
+                                                                                 pcabs_text, avg_pcabs_text, pcrel_text, avg_pcrel_text, vol_text, avg_vol_text, 
+                                                                                 text_size, input_currency)
+
+// ZigZag Statistic Table
+getStatisticTable_VolatilityZigZag_byBrettkind(x1, Y1_array, number_of_bars_array, draw_tbl)
+
+// data_window plots
+plot(dev_Y2_series, "Deviation Series", display = display.none)
+plot(last_zigzag_high ? 100 : 0, "last ZigZag was high", display = display.data_window, editable = false, format= format.percent)
+plot(last_zigzag_low ? 100 : 0, "last ZigZag was low", display = display.data_window, editable = false, format= format.percent)
+plot(deviation *100 / Y2, "ZigZag Deviation", display = display.data_window, editable = false, format= format.percent)
+
+// Alterts
+// New Altert if a new fixed ZigZag-Line was drawn or new ZigZag-Point "⦿" appeared
+alertcondition(new_zigzag, title='New Fixed ZigZag Pivot ⦿', message='New ZigZag ⦿')
