@@ -1,0 +1,98 @@
+
+//@version=5
+indicator("Marker", overlay = true)
+
+// Importing Libarary 
+import TradingView/ZigZag/7 as ZigZagLib 
+
+//Input
+lb=input(5,"Left Bars")
+rb=input(5,"Right Bars")
+
+showhh=input(true,"HigherHigh")
+showhl=input(true,"HigherLow")
+showlh=input(true,"LowerHigh")
+showll=input(true,"LowerLow")
+
+//Define Pivot points
+ph=ta.pivothigh(lb,rb)
+pl=ta.pivotlow(lb,rb)
+
+//Define Pivot Direction and assign ZigZag Point
+hl = not na(ph) ? 1 : (not na(pl) ? -1 : na)
+zz= not na(ph) ? ph : (not na(pl) ? pl : na)
+zz := not na(pl) and hl == -1 and ta.valuewhen(not na(hl), hl, 1) == -1 and ph > ta.valuewhen(not na(zz), zz, 1)? na : zz
+zz := not na(ph) and hl == 1 and ta.valuewhen(not na(hl), hl, 1) == 1 and pl < ta.valuewhen(not na(zz), zz, 1)? na : zz
+
+hl := hl == 1 and ta.valuewhen(not na(hl), hl, 1) == -1 and zz < ta.valuewhen(not na(zz), zz, 1)? na : hl
+hl := hl == -1 and ta.valuewhen(not na(hl), hl, 1) == 1 and zz > ta.valuewhen(not na(zz), zz, 1)? na : hl
+zz := na(hl)? na: zz
+
+//@function to Find previous 4 zigzag points
+findprevious()=>  
+    ehl = hl==1? -1: 1
+    loc1 = 0.0, loc2 = 0.0, loc3 = 0.0, loc4 = 0.0
+    xx = 0
+    for x=1 to 1000
+        if hl[x]==ehl and not na(zz[x])
+            loc1 := zz[x]
+            xx := x + 1
+            break
+    ehl := hl
+    for x=xx to 1000
+        if hl[x]==ehl and not na(zz[x])
+            loc2 := zz[x]
+            xx := x + 1
+            break
+    ehl := hl==1? -1: 1
+    for x=xx to 1000
+        if hl[x]==ehl and not na(zz[x])
+            loc3 := zz[x]
+            xx := x + 1
+            break
+    ehl := hl
+    for x=xx to 1000
+        if hl[x]==ehl and not na(zz[x])
+            loc4 := zz[x]
+            break
+    [loc1, loc2, loc3, loc4]
+
+//Copy Previous Zigzag points
+float a = na, float b = na, float c = na, float d = na, float e = na
+[loc1, loc2, loc3, loc4] = findprevious()
+a := zz 
+b := loc1
+c := loc2
+d := loc3
+e := loc4
+
+//@ Condition to evaluate current ZigZag Points
+_hh = not na(zz) and (a > b and a > c and c > b and c > d) and not na(hl)
+_ll = not na(zz) and (a < b and a < c and c < b and c < d) and not na(hl)
+_hl = not na(zz) and ((a >= c and (b > c and b > d and d > c and d > e)) or (a < b and a > c and b < d)) and not na(hl)
+_lh = not na(zz) and ((a <= c and (b < c and b < d and d < c and d < e)) or (a > b and a < c and b > d)) and not na(hl)
+
+
+
+//Plot ZigZag Points
+plotshape(showhl and _hl ? _hl : na, text="HL", title="Higher Low", style=shape.labelup, color=color.lime, textcolor=color.black, location=location.belowbar, offset=-rb)
+plotshape(showhh and _hh ? _hh : na, text="HH", title="Higher High", style=shape.labeldown, color=color.lime, textcolor=color.black, location=location.abovebar, offset=-rb)
+plotshape(showll and _ll ? _ll : na, text="LL", title="Lower Low", style=shape.labelup, color=color.red, textcolor=color.white, location=location.belowbar, offset=-rb)
+plotshape(showlh and _lh ? _lh : na, text="LH", title="Lower High", style=shape.labeldown, color=color.red, textcolor=color.white, location=location.abovebar, offset=-rb)
+
+// Create Zig Zag instance from user settings.
+var zigZag = ZigZagLib.newInstance(
+  ZigZagLib.Settings.new(
+      input.float(5.0, "Price deviation for reversals (%)", 0.00001, 100.0, 0.5, "0.00001 - 100"),
+      input.int(10, "Pivot legs", 2),
+      input(color.gray, "Line color", display = display.data_window),
+      input(true, "Extend to last bar", display = display.data_window),
+      input(false, "Display reversal price", display = display.data_window),
+      input(false, "Display cumulative volume", display = display.data_window),
+      input(false, "Display reversal price change", inline = "priceRev", display = display.data_window),
+      input.string("Absolute", "", ["Absolute", "Percent"], inline = "priceRev", display = display.data_window),
+      true)
+ )
+
+// Update 'zigZag' object on each bar with new ​pivots, ​volume, lines, labels.
+zigZag.update()
