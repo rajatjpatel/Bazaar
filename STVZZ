@@ -1,0 +1,63 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © shoonya0000
+
+
+//@version=6
+indicator('STVZZ', 'STVZZ', true, max_bars_back = 5000)
+
+import shoonya0000/VolZigZag/1 as STVZZ
+// INPUTS FOR THE INDICATOR
+
+// INPUTS ZigZag Calculation
+hl_src = input.bool(true, 'use High/Low', inline = '0', group = 'ZigZag Calculation', tooltip = 'High or Low is the default source.')
+SOURCE = input.source(close, '| Else', inline = '0', group = 'ZigZag Calculation')
+// dynamic length
+len_def = input.bool(true, 'default Length', inline = '1', group = 'ZigZag Calculation', tooltip = 'Default length is one year in daily, weekly or monthly timeframe. In other timeframes the default is 300.')
+len_cus = input.int(200, '| Custom', 10, inline = '1', group = 'ZigZag Calculation')
+// default Year
+length = len_def ? timeframe.ismonthly ? 12 : timeframe.isweekly ? 52 : timeframe.isdaily ? 251 : timeframe.isintraday ? 300 : 300 : len_cus
+length := math.min(length, bar_index + 1)
+// min deviation
+min_pvt_length = input.int(2, 'minimum ZigZag candles length', minval = 1, maxval = 5, step = 1, inline = '2', group = 'ZigZag Calculation', tooltip = 'The minimum number of bars or candles needed to confirm a trend change.  The higher the count, the more the Deviation condition is suppressed.  A Count of \'1\' is more pricise, but for smoother results, a number of \'2\' is recommended.')
+// min deviation
+min_dev_input = input.float(0.00, 'minimum ZigZag deviation (%)', minval = 0, maxval = 100, step = 1, inline = '3', group = 'ZigZag Calculation', tooltip = 'The ZigZag is calculated using standard deviation, true range, average true range, and the minimum ZigZag deviation.')
+// use Sstdev Factor
+stdev_fctr = input.float(1.0, 'Standard Deviation Factor', minval = 0.1, maxval = 3.0, step = 0.1, inline = '4', group = 'ZigZag Calculation', tooltip = 'Multiplicates the Standard Deviation with this factor.')
+
+// INPUTS ZigZag Styling
+ZigZag = input.bool(true, 'Draw ZigZag |', group = 'ZigZag Styling', inline = '1')
+zz_devline = input.bool(true, 'Deviation Line', group = 'ZigZag Styling', inline = '1', tooltip = 'if the ZigZag source crosses the Deviation-Line a new fixed Pivot Point ⦿ will emerge')
+zz_color = input.color(color.rgb(10, 46, 247), 'Line-Color', group = 'ZigZag Styling', inline = '2')
+zz_width = input.int(1, 'linewidth', group = 'ZigZag Styling', inline = '2', minval = 0, maxval = 10)
+zz_points = input.bool(true, 'Fixed Pivot ⦿ |', group = 'ZigZag Styling', inline = '3', tooltip = '⦿ representing a fixed ZigZag Pivot Point')
+zz_alert_sign = input.bool(true, 'Alert Point ◯', group = 'ZigZag Styling', inline = '3', tooltip = '⦿ representing a fixed ZigZag Pivot Point \n◯ representing the occurrence when a fixed Pivot emerges')
+
+// INPUTS ZigZag Labeling
+input_currency = syminfo.currency
+ZZ_Label = input.bool(true, 'Draw Labels |', group = 'ZigZag Labeling', inline = '0')
+ZZ_Label_clr = input.color(color.rgb(247, 5, 41), 'Text-Color', group = 'ZigZag Labeling', inline = '0')
+rev_text = input.bool(true, 'Reversal Price |', group = 'ZigZag Labeling', inline = '1')
+zz_bars_text = input.bool(true, 'Counter', group = 'ZigZag Labeling', inline = '1', tooltip = 'counts the bars between ⦿, peak bars are included')
+pcabs_text = input.bool(true, 'Price Change |', group = 'ZigZag Labeling', inline = '2')
+avg_pcabs_text = input.bool(true, 'Ø', group = 'ZigZag Labeling', inline = '2', tooltip = 'arithmetic mean')
+pcrel_text = input.bool(true, 'Percentage Change |', group = 'ZigZag Labeling', inline = '3', tooltip = 'Compound Growth Rate per bar')
+avg_pcrel_text = input.bool(true, '%', group = 'ZigZag Labeling', inline = '3')
+vol_text = input.bool(true, 'Volume |', group = 'ZigZag Labeling', inline = '4')
+avg_vol_text = input.bool(true, 'Ø', group = 'ZigZag Labeling', inline = '4', tooltip = 'volume of the peak bars are included. \narithmetic mean')
+text_size = input.string('small', 'Label Text-Size', options = ['auto', 'tiny', 'small', 'normal', 'large', 'huge'], group = 'ZigZag Labeling', inline = '5')
+text_size := text_size == 'auto' ? size.auto : text_size == 'tiny' ? size.tiny : text_size == 'small' ? size.small : text_size == 'normal' ? size.normal : text_size == 'large' ? size.large : size.huge
+
+// statistic table
+draw_tbl = input.bool(true, 'Draw Table', group = 'Statistic Table', inline = '0', tooltip = 'The first row represents the average length of bars following the emergence of a new ZigZag pattern. \nThe Second represents the average Count or bar length of the ZigZag lines.   \nBelow are the probabilities of the occurrence of each wave pattern.')
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Plot / Draw / Get Values from Export-Functions
+
+// ZigZag Line and Label Drawings and get calculated values
+[x1, x2, x1_array, Y1, Y2, Y1_array, deviation, dev_Y2_series, new_zigzag, last_zigzag_high, last_zigzag_low, number_of_bars_Y2, number_of_bars_array, price_change_abs_Y2, price_change_abs_array, price_change_rel_Y2, price_change_rel_array, avg_price_change_abs_Y2, avg_price_change_abs_array, avg_price_change_rel_Y2, avg_price_change_rel_array, sum_vol_Y2, sum_vol_array, avg_vol_Y2, avg_vol_array] = STVZZ.getValues_andStyling_VolatilityZigZag_byBrettkind(hl_src, SOURCE, length, min_dev_input, min_pvt_length, stdev_fctr, ZigZag, zz_color, zz_width, zz_devline, zz_points, zz_alert_sign, ZZ_Label, ZZ_Label_clr, rev_text, zz_bars_text, pcabs_text, avg_pcabs_text, pcrel_text, avg_pcrel_text, vol_text, avg_vol_text, text_size, input_currency)
+
+// ZigZag Statistic Table
+STVZZ.getStatisticTable_VolatilityZigZag_byBrettkind(x1, Y1_array, number_of_bars_array, draw_tbl)
+
+
