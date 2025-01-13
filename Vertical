@@ -1,0 +1,31 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © allanster
+
+//@version=5
+indicator(title = "How To Show Vertical Lines", overlay = true, scale = scale.none)
+
+// === Method Background Color ===
+i_Time = input.session("1600-1601", "Time")
+i_BkGr = input.bool   (false,       "Show Method Background Color")
+isTime = not na(time(timeframe.period, i_Time + ":1234567")) // ":1234567" is days of week market is open
+bgcolor(i_BkGr and isTime ? color.new(color.gray, 50) : na)
+
+// === Used By Both Methods Below ===
+vanity = "==============================================="
+i_Hour = input.int    (16,          "Hour",   minval = 0, maxval = 23, group = vanity)
+i_Mins = input.int    (00,          "Minute", minval = 0, maxval = 59, group = vanity)
+isHour =   hour == i_Hour
+isMins = minute == i_Mins
+
+// === Method Line === // credit: @midtownsk8rguy -> https://www.tradingview.com/script/EmTkvfCM-vline-Function-for-Pine-Script-v4-0/
+i_Line = input.bool   (true,        "Show Method Line by midtownsk8rguy", group = vanity)
+vline(barIdx, colors, styles, widths) => // Verticle Line Function, ≈50-54 lines maximum allowable per indicator
+    // reTurn = line.new(barIdx,      0.0, barIdx,        100.0, xloc.bar_index, extend.both, colors, styles, widths) // Suitable for study(overlay=false) and RSI, Stochastic, etc...
+    // reTurn = line.new(barIdx,     -1.0, barIdx,          1.0, xloc.bar_index, extend.both, colors, styles, widths) // Suitable for study(overlay=false) and +/-1.0 oscillators
+    reTurn = line.new(barIdx, low - ta.tr, barIdx, high + ta.tr, xloc.bar_index, extend.both, colors, styles, widths) // Suitable for study(overlay=true)
+if(i_Line and isHour and isMins)
+    vline(bar_index, #FF8000ff, line.style_dashed, 1) // Variable assignment not required
+
+// === Method Plot === // credit: @PineCoders -> https://www.pinecoders.com/faq_and_code/#how-can-i-plot-vertical-lines-on-a-chart
+i_Plot = input.bool(false,          "Show Method Plot by PineCoders")
+plot(i_Plot and isHour and isMins ? 10e20 : na, color = color.new(color.silver, 50), linewidth = 2, style = plot.style_histogram)
