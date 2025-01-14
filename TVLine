@@ -1,0 +1,167 @@
+//@version=5
+indicator("Time Vertical Lines", "VLines", overlay=true)
+
+// Global settings
+showHistory = input.bool(true, "Show Historical Lines", tooltip="When disabled, only shows lines for the current day")
+tzOffset = input.int(2, "Time Zone Offset (Hours)", minval=-12, maxval=12, tooltip="Enter the number of hours to adjust the time. For example, if lines appear 3 hours early, enter 3")
+
+// Create input groups for better organization
+g1 = "Time Line 1"
+g2 = "Time Line 2"
+g3 = "Time Line 3"
+g4 = "Session Lines"
+gz1 = "Zone 1-2 Settings"
+gz2 = "Zone 2-3 Settings"
+gz3 = "Zone 4-5 Settings"
+
+// Time 1 inputs
+show_line1 = input.bool(true, "Show Line 1", group=g1)
+hour1 = input.int(6, "Hour", minval=0, maxval=23, group=g1)
+minute1 = input.int(30, "Minute", minval=0, maxval=59, group=g1)
+color1 = input.color(color.blue, "Color", group=g1)
+
+// Time 2 inputs
+show_line2 = input.bool(true, "Show Line 2", group=g2)
+hour2 = input.int(7, "Hour", minval=0, maxval=23, group=g2)
+minute2 = input.int(0, "Minute", minval=0, maxval=59, group=g2)
+color2 = input.color(color.blue, "Color", group=g2)
+
+// Time 3 inputs
+show_line3 = input.bool(true, "Show Line 3", group=g3)
+hour3 = input.int(8, "Hour", minval=0, maxval=23, group=g3)
+minute3 = input.int(0, "Minute", minval=0, maxval=59, group=g3)
+color3 = input.color(color.blue, "Color", group=g3)
+
+// Session lines (4 & 5) inputs
+show_line4 = input.bool(true, "Show Session Start Line", group=g4)
+hour4 = input.int(15, "Start Hour", minval=0, maxval=23, group=g4)
+minute4 = input.int(0, "Start Minute", minval=0, maxval=59, group=g4)
+show_line5 = input.bool(true, "Show Session End Line", group=g4)
+hour5 = input.int(21, "End Hour", minval=0, maxval=23, group=g4)
+minute5 = input.int(0, "End Minute", minval=0, maxval=59, group=g4)
+sessionLineColor = input.color(color.red, "Session Lines Color", group=g4)
+
+// Zone 1-2 settings
+showZone12 = input.bool(true, "Show Zone 1-2", group=gz1)
+showHorizontalLines12 = input.bool(true, "Show Horizontal Lines", group=gz1)
+horizontalLineColor12 = input.color(color.blue, "Horizontal Lines Color", group=gz1)
+backgroundColor12 = input.color(color.new(color.blue, 95), "Background Color", group=gz1)
+horizontalLineStyle12 = input.string("Solid", "Horizontal Line Style", options=["Solid", "Dashed", "Dotted"], group=gz1)
+horizontalLineWidth12 = input.int(1, "Horizontal Line Width", minval=1, maxval=4, group=gz1)
+
+// Zone 2-3 settings
+showZone23 = input.bool(true, "Show Zone 2-3", group=gz2)
+showHorizontalLines23 = input.bool(true, "Show Horizontal Lines", group=gz2)
+horizontalLineColor23 = input.color(color.blue, "Horizontal Lines Color", group=gz2)
+backgroundColor23 = input.color(color.new(color.blue, 95), "Background Color", group=gz2)
+horizontalLineStyle23 = input.string("Solid", "Horizontal Line Style", options=["Solid", "Dashed", "Dotted"], group=gz2)
+horizontalLineWidth23 = input.int(1, "Horizontal Line Width", minval=1, maxval=4, group=gz2)
+
+// Zone 4-5 settings
+showZone45 = input.bool(true, "Show Zone 4-5", group=gz3)
+showHorizontalLines45 = input.bool(true, "Show Horizontal Lines", group=gz3)
+horizontalLineColor45 = input.color(color.red, "Horizontal Lines Color", group=gz3)
+backgroundColor45 = input.color(color.new(color.red, 95), "Background Color", group=gz3)
+horizontalLineStyle45 = input.string("Solid", "Horizontal Line Style", options=["Solid", "Dashed", "Dotted"], group=gz3)
+horizontalLineWidth45 = input.int(1, "Horizontal Line Width", minval=1, maxval=4, group=gz3)
+
+// Style inputs
+lineStyle = input.string("Solid", "Line Style", options=["Solid", "Dashed", "Dotted"])
+lineWidth = input.int(2, "Line Width", minval=1, maxval=4)
+
+// Convert line style string to line.style
+getLineStyle(style) =>
+    style == "Solid" ? line.style_solid : 
+         style == "Dashed" ? line.style_dashed : 
+         line.style_dotted
+
+// Set line styles
+ls = getLineStyle(lineStyle)
+
+// Function to adjust hour based on offset
+adjustedHour(h) =>
+    adjusted = (h + tzOffset) % 24
+    adjusted < 0 ? adjusted + 24 : adjusted
+
+// Check if current bar matches time conditions with offset
+isTime(h, m) =>
+    hour = hour(time)
+    minute = minute(time)
+    adjustedH = adjustedHour(h)
+    hour == adjustedH and minute == m
+
+// Check if we're on the current trading day
+isCurrentDay = showHistory or time >= timestamp(year, month, dayofmonth, 0, 0, 0)
+
+// Variables to store values for horizontal lines
+var int line1_index = na
+var int line2_index = na
+var int line3_index = na
+var int line4_index = na
+var int line5_index = na
+var float max_high_12 = na
+var float min_low_12 = na
+var float max_high_23 = na
+var float min_low_23 = na
+var float max_high_45 = na
+var float min_low_45 = na
+
+drawZone(start_index, end_index, max_high, min_low, showZone, showLines, bgColor, lineColor, lineStyle, lineWidth) =>
+    if showZone
+        box.new(left=start_index, right=end_index, top=max_high, bottom=min_low, 
+               bgcolor=bgColor, border_color=color.new(color.black, 100))
+    
+    if showLines
+        hls = getLineStyle(lineStyle)
+        line.new(x1=start_index, x2=end_index, y1=max_high, y2=max_high, 
+                 color=lineColor, width=lineWidth, style=hls)
+        line.new(x1=start_index, x2=end_index, y1=min_low, y2=min_low, 
+                 color=lineColor, width=lineWidth, style=hls)
+
+// Draw vertical lines and store indices for horizontal lines
+if show_line1 and isTime(hour1, minute1) and isCurrentDay
+    line.new(x1=bar_index, x2=bar_index, y1=low - (high - low), y2=high + (high - low), 
+             color=color1, width=lineWidth, style=ls, extend=extend.both)
+    line1_index := bar_index
+    max_high_12 := high
+    min_low_12 := low
+
+if show_line2 and isTime(hour2, minute2) and isCurrentDay
+    line.new(x1=bar_index, x2=bar_index, y1=low - (high - low), y2=high + (high - low), 
+             color=color2, width=lineWidth, style=ls, extend=extend.both)
+    line2_index := bar_index
+    
+    if not na(line1_index)
+        max_high_12 := math.max(max_high_12, high)
+        min_low_12 := math.min(min_low_12, low)
+        drawZone(line1_index, line2_index, max_high_12, min_low_12, showZone12, showHorizontalLines12, backgroundColor12, horizontalLineColor12, horizontalLineStyle12, horizontalLineWidth12)
+    
+    max_high_23 := high
+    min_low_23 := low
+
+if show_line3 and isTime(hour3, minute3) and isCurrentDay
+    line.new(x1=bar_index, x2=bar_index, y1=low - (high - low), y2=high + (high - low), 
+             color=color3, width=lineWidth, style=ls, extend=extend.both)
+    line3_index := bar_index
+    
+    if not na(line2_index)
+        max_high_23 := math.max(max_high_23, high)
+        min_low_23 := math.min(min_low_23, low)
+        drawZone(line2_index, line3_index, max_high_23, min_low_23, showZone23,showHorizontalLines23, backgroundColor23, horizontalLineColor23, horizontalLineStyle23, horizontalLineWidth23)
+
+if show_line4 and isTime(hour4, minute4) and isCurrentDay
+    line.new(x1=bar_index, x2=bar_index, y1=low - (high - low), y2=high + (high - low), 
+             color=sessionLineColor, width=lineWidth, style=ls, extend=extend.both)
+    line4_index := bar_index
+    max_high_45 := high
+    min_low_45 := low
+
+if show_line5 and isTime(hour5, minute5) and isCurrentDay
+    line.new(x1=bar_index, x2=bar_index, y1=low - (high - low), y2=high + (high - low), 
+             color=sessionLineColor, width=lineWidth, style=ls, extend=extend.both)
+    line5_index := bar_index
+    
+    if not na(line4_index)
+        max_high_45 := math.max(max_high_45, high)
+        min_low_45 := math.min(min_low_45, low)
+        drawZone(line4_index, line5_index, max_high_45, min_low_45, showZone45, showHorizontalLines45, backgroundColor45, horizontalLineColor45, horizontalLineStyle45, horizontalLineWidth45)
