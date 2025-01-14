@@ -1,0 +1,10 @@
+//@version=4
+study("vline() Function for Pine Script v4.0+", overlay=true)
+
+vline(BarIndex, Color, LineStyle, LineWidth) => // Verticle Line Function, ≈50-54 lines maximum allowable per indicator
+    // return = line.new(BarIndex,   0.0, BarIndex,     100.0, xloc.bar_index, extend.both, Color, LineStyle, LineWidth) // Suitable for study(overlay=false) and RSI, Stochastic, etc...
+    // return = line.new(BarIndex,  -1.0, BarIndex,       1.0, xloc.bar_index, extend.both, Color, LineStyle, LineWidth) // Suitable for study(overlay=false) and +/-1.0 oscillators
+    return = line.new(BarIndex, low - tr, BarIndex, high + tr, xloc.bar_index, extend.both, Color, LineStyle, LineWidth) // Suitable for study(overlay=true)
+
+if(bar_index%10==0.0) // Generically plots a line every 10 bars
+    vline(bar_index, #FF8000ff, line.style_solid, 1) // Variable assignment not required
