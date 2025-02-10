@@ -1,0 +1,60 @@
+
+//@version=5
+
+indicator('ZigZag', overlay=true)
+
+// inputs
+Depth = input(12, title='Depth')  // Depth
+Deviation = input(5, title='Deviation')  // Deviation
+
+// ZigZag
+var lastlow = 0.0
+var lasthigh = 0.0
+
+data(x) =>
+    d = request.security(syminfo.tickerid, timeframe.period, x)
+    d
+getLow(x, y, z, a) =>
+    lastlow1 = y
+    v = data(x)
+    m = v == lastlow1 or data(z) - v > a * syminfo.mintick
+    if v != lastlow1
+        lastlow1 := v
+    if m
+        v := 0.0
+        v
+    [v, lastlow1]
+getHigh(x, y, z, a) =>
+    lasthigh1 = y
+    v = data(x)
+    m = v == lasthigh1 or v - data(z) > a * syminfo.mintick
+    if v != lasthigh1
+        lasthigh1 := v
+    if m
+        v := 0.0
+        v
+    [v, lasthigh1]
+
+[v, e] = getLow(ta.lowest(Depth), lastlow, low, Deviation)
+lastlow := e
+zBB = v != 0.0
+[v1, e1] = getHigh(ta.highest(Depth), lasthigh, high, Deviation)
+lasthigh := e1
+zSS = v1 != 0.0
+
+zigzagDirection = -1
+zigzagHigh = 0
+zigzagLow = 0
+zigzagDirection := zBB ? 0 : zSS ? 1 : nz(zigzagDirection[1], -1)
+virtualLow = zigzagLow[1] + 1
+if not zBB or zBB and zigzagDirection == zigzagDirection[1] and low > low[virtualLow]
+    zigzagLow := nz(zigzagLow[1]) + 1
+    zigzagLow
+virtualHigh = zigzagHigh[1] + 1
+if not zSS or zSS and zigzagDirection == zigzagDirection[1] and high < high[virtualHigh]
+    zigzagHigh := nz(zigzagHigh[1]) + 1
+    zigzagHigh
+line zigzag = line.new(bar_index - zigzagLow, low[zigzagLow], bar_index - zigzagHigh, high[zigzagHigh], color=color.red, style=line.style_solid, width=2)
+if zigzagDirection == zigzagDirection[1]
+    line.delete(zigzag[1])
+
