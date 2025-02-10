@@ -1,0 +1,112 @@
+//@version=4
+
+study("Zero", overlay=true)
+
+////////////
+// Inputs //
+////////////
+//{
+title1 = "------ ZigZag settings ------"
+src             = input(     ohlc4, title = "source",                 group = title1, inline = "ma")
+length          = input(        10, title = "Length",                 group = title1, inline = "ma")
+phase           = input(        50, title = "Phase",                  group = title1, inline = "ma")
+power           = input(         2, title = "Power",                  group = title1, inline = "ma")
+do_col          = input(      true, title="color up and down moves?", group = title1, inline = "color")
+color_up        = input(color.lime, title = "",                       group = title1, inline = "color")
+color_dn        = input( color.red, title = "",                       group = title1, inline = "color")
+
+title2  = "---------- Alerts ----------"
+do_buy_alert    = input(                   true, title = "Buy Alert -> message =",                                               group = title2, inline = "Buy")
+buy_alert_msg   = input(            "Buy alert", title = "",                                                                     group = title2, inline = "Buy")
+buy_alert_freq  = input(alert.freq_once_per_bar, title = "", options = [alert.freq_once_per_bar, alert.freq_once_per_bar_close], group = title2, inline = "Buy",
+                         tooltip = "If these parameters are changed, running ALERTS WILL NOT UPDATE automatically!! running alerts have to be deleted and added again!")
+do_sell_alert   = input(                   true, title = "Sell Alert -> message =",                                              group = title2, inline = "Sell")
+sell_alert_msg  = input(           "Sell alert", title = "",                                                                     group = title2, inline = "Sell")
+sell_alert_freq = input(alert.freq_once_per_bar, title = "", options = [alert.freq_once_per_bar, alert.freq_once_per_bar_close], group = title2, inline = "Sell",
+                         tooltip = "If these parameters are changed, running ALERTS WILL NOT UPDATE automatically!! running alerts have to be deleted and added again!")
+//}
+
+
+///////////////
+// Functions //
+///////////////
+//{
+// definition of "Jurik Moving Average", by Everget
+jma(_src, _length, _phase, _power) =>
+    phaseRatio = _phase < -100 ? 0.5 : _phase > 100 ? 2.5 : _phase / 100 + 1.5
+    beta = 0.45 * (_length - 1) / (0.45 * (_length - 1) + 2)
+    alpha = pow(beta, _power)
+    jma = 0.0
+    e0 = 0.0
+    e0 := (1 - alpha) * _src + alpha * nz(e0[1])
+    e1 = 0.0
+    e1 := (_src - e0) * (1 - beta) + beta * nz(e1[1])
+    e2 = 0.0
+    e2 := (e0 + phaseRatio * e1 - nz(jma[1])) * pow(1 - alpha, 2) + 
+       pow(alpha, 2) * nz(e2[1])
+    jma := e2 + nz(jma[1])
+    jma
+//}
+
+
+/////////////////
+// Main Script //
+/////////////////
+//{
+//calculate jma turning point
+jma_price   = jma(src, length, phase, power)
+turn_down   =  rising(jma_price[1], 1) and not  rising(jma_price, 1)
+turn_up     = falling(jma_price[1], 1) and not falling(jma_price, 1)
+
+pivot       = float(na)
+highest_1   = highest(high, 5)
+lowest_1    = lowest(low, 5)
+pivot      :=
+ turn_down ? highest_1 :
+ turn_up   ?  lowest_1 : na
+
+fixnan_1    = fixnan(pivot)
+pivot_color = do_col ? pivot < fixnan_1[1] ? color_dn : color_up : color.yellow
+
+pivot_bar   = 0
+pivot_bar  :=
+ turn_down ? valuewhen(high == fixnan_1, bar_index, 0) :
+ turn_up   ? valuewhen( low == fixnan_1, bar_index, 0) : na
+//}
+
+
+///////////
+// Plots //
+///////////
+//{
+plot(pivot, linewidth = 2, color = pivot_color, offset = -2, transp = 0)
+plotshape(turn_down ? fixnan_1 : na, title = "top",    style = shape.triangledown, location = location.absolute, size = size.tiny, color = color.red,  transp = 0)
+plotshape(  turn_up ? fixnan_1 : na, title = "bottom", style = shape.triangleup,   location = location.absolute, size = size.tiny, color = color.lime, transp = 0)
+
+// current line
+var line last_line = na
+if not na(last_line) or change(fixnan(pivot)) != 0
+    line.delete(last_line)
+start_bar =
+ barstate.isrealtime and
+ (turn_down != turn_down[1] or
+ turn_up != turn_up[1]) ? bar_index - 2 :
+ valuewhen(change(fixnan(pivot)) != 0, bar_index, 0) - 2
+last_line := line.new(start_bar, fixnan(pivot), bar_index, ohlc4, color = ohlc4 >= fixnan(pivot) ? color.new(color.lime, 0) : color.new(color.fuchsia, 0), style = line.style_dotted, width = 1)
+//}
+ 
+
+////////////
+// Alerts //
+////////////
+//{
+buy_alert  = turn_up
+sell_alert = turn_down
+
+if buy_alert and do_buy_alert
+    alert(message =  buy_alert_msg, freq = buy_alert_freq)
+
+if sell_alert and do_sell_alert
+    alert(message = sell_alert_msg, freq = sell_alert_freq)
+//}
+
