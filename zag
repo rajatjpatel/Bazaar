@@ -19,7 +19,47 @@ var zigZag = ZigZagLib.newInstance(
 
 // Update 'zigZag' object on each bar with new ​pivots, ​volume, lines, labels.
 zigZag.update()
+--------
+indicator("STZag", overlay = true, max_lines_count = 500, max_labels_count = 500)
 
+import TradingView/ZigZag/7 as ZigZagLib 
+
+// Create Zig Zag instance with disabled features
+var zigZag = ZigZagLib.newInstance(
+  ZigZagLib.Settings.new(
+      input.float(1, "Price deviation for reversals (%)", 0.00001, 100.0, 0.5, "0.00001 - 100"),
+      input.int(2, "Pivot legs", 2),
+      input(#2962FF, "Line color", display = display.data_window),
+      false, // Extend to last bar - DISABLED
+      false, // Display reversal price - DISABLED
+      false, // Display cumulative volume - DISABLED
+      false, // Display reversal price change - DISABLED
+      input.string("Absolute", "", ["Absolute", "Percent"], inline = "priceRev", display = display.data_window),
+      true)
+ )
+
+// Update 'zigZag' object on each bar
+zigZag.update()
+--------
+import TradingView/ZigZag/7 as ZigZagLib 
+
+// Create Zig Zag instance with disabled features
+var zigZag = ZigZagLib.newInstance(
+  ZigZagLib.Settings.new(
+      input.float(1, "Price deviation for reversals (%)", 0.00001, 100.0, 0.5, "0.00001 - 100"),
+      input.int(2, "Pivot legs", 2),
+      input(#2962FF, "Line color", display = display.data_window),
+      false, // Extend to last bar - DISABLED
+      false, // Display reversal price - DISABLED
+      false, // Display cumulative volume - DISABLED
+      input(true, "Display reversal price change", inline = "priceRev", display = display.data_window),
+      input.string("Absolute", "", ["Absolute", "Percent"], inline = "priceRev", display = display.data_window),
+      true)
+ )
+
+// Update 'zigZag' object on each bar with new ​pivots, ​volume, lines, labels.
+zigZag.update()
+--------
 // Define "n" as the number of periods and keep a minimum value of 2 for error handling.
 n = input.int(title="Periods", defval=9, minval=2)
 
