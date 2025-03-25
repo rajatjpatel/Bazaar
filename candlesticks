@@ -1,0 +1,73 @@
+//@version=3
+
+
+// Plots bearish candlesticks.
+
+study(title="Bearish Candles LF", overlay=true)
+
+// ---------- Inputs
+ShowDojiHammer = input(false, "Also identify Dojis and Hammers")
+ColorBars = input(true, "Color bars")
+UseMarker = input(false, "Show markers")
+UseMarkerAndText = input(false, "Show text")
+
+// ---------- Candle components and states
+NonZeroValue = 0.0000000001
+GreenCandle = close>open
+RedCandle = close<open
+NoBody = close==open
+Body = abs(close-open)
+WickLo = min(open,close)-low
+WickHi = high-max(open,close)
+NonZeroBody = open!=close?Body:NonZeroValue
+NonZeroWickLo = min(open,close)!=low? WickLo:NonZeroValue
+NonZeroWickHi = max(open,close)!=high? WickHi:NonZeroValue
+FullHeight = high-low
+NoMovement = high==low
+Atr = atr(7)
+
+// ---------- Bearish Candles
+// These patterns are identified at following candle so prints need to be offset.
+DarkCloudCover = RedCandle[1] and GreenCandle[2] and close[1]<open[2]+(Body[2]/2) and close[1]>open[2] and high[1]>high[2] and high<high[1] and Body[2]>Atr[2]*1.5
+EveningStar = RedCandle and RedCandle[1] and GreenCandle[2] and close[1]>=close[2] and close[1]>=open and Body[2]>WickHi[2] and Body[2]>WickLo[2] and close<open[2]+(Body[2]/2)
+ShootingStar = FullHeight>3*NonZeroBody and high>high[1] and WickHi>WickLo and WickHi>Atr*1.5
+// These patterns don't require offsetting.
+EngulfingPattern = max(close[1],open[1])<max(close,open) and min(close[1],open[1])>min(close,open) and Body>Body[1] and RedCandle and GreenCandle[1]
+HangingMan = open[1]>open[2] and close[1]>close[2] and WickHi[1]<=Body[1] and WickLo[1]>1.2*Body[1] and rising(high[1],5) and close<min(open[1],close[1])
+Harami = min(open,close)>min(open[1],close[1]) and max(open,close)<max(open[1],close[1]) and (WickHi>Body or WickLo>Body) and Body[1]>Body*2
+// ---------- Other Candles
+Doji = NoMovement or (FullHeight>5*NonZeroBody and (WickLo>Body or WickHi>Body))
+Hammer = FullHeight>3*Body and  WickLo>3*NonZeroBody and Body>2*WickHi
+
+// ---------- States
+NoOffsets = EngulfingPattern or Harami or ShootingStar
+Offsets = DarkCloudCover or EveningStar or HangingMan
+BearishCandle = NoOffsets or Offsets
+DojiOrHammer = Doji or Hammer
+
+// ---------- Color bars
+BearishColor = color(orange, 0)
+barcolor( ColorBars and DarkCloudCover? BearishColor:na, offset=-1, title="Bar: Dark Cloud Cover")
+barcolor( ColorBars and EveningStar? BearishColor :na, offset=-1, title="Bar: Evening Star")
+barcolor( ColorBars and HangingMan? BearishColor:na, offset=-1, title="Bar: Hanging Man")
+
+barcolor( ColorBars and EngulfingPattern? BearishColor:na, title="Bar: Engulfing Pattern")
+barcolor( ColorBars and Harami? BearishColor:na, title="Bar: Harami")
+barcolor( ColorBars and ShootingStar? BearishColor:na, title="Bar: Shooting Star (Current)")
+barcolor( ColorBars and ShowDojiHammer and Doji? BearishColor:na, title="Bar: Doji")
+barcolor( ColorBars and ShowDojiHammer and Hammer? BearishColor:na, title="Bar: Hammer")
+
+// Plot markers without text.
+plotshape( UseMarker and Offsets, "Markers without text", style=shape.circle, color=orange, size=size.tiny, location=location.abovebar, offset=-1)
+plotshape( UseMarker and (NoOffsets or (ShowDojiHammer and DojiOrHammer)), "Markers without text", style=shape.circle, color=orange, size=size.tiny, location=location.abovebar)
+
+// Plot markers with text.
+plotchar( UseMarkerAndText and DarkCloudCover, "Marker: Dark Cloud Cover Marker", char="", color=orange, size=size.tiny, location=location.abovebar, text="Dark\nCloud\nCover", offset=-1)
+plotchar( UseMarkerAndText and EveningStar, "Marker: Evening Star", char="", color=orange, size=size.tiny, location=location.abovebar, text="Evening\nStar", offset=-1)
+plotchar( UseMarkerAndText and HangingMan, "Marker: Hanging Man", char="", color=orange, size=size.tiny, location=location.abovebar, text="Hanging\nMan", offset=-1)
+
+plotchar( UseMarkerAndText and EngulfingPattern, "Marker: Engulfing Pattern", char="", color=orange, size=size.tiny, location=location.abovebar, text="Engulfing\nPattern")
+plotchar( UseMarkerAndText and Harami, "Marker: Harami", char="", color=orange, size=size.tiny, location=location.abovebar, text="Harami")
+plotchar( UseMarkerAndText and ShootingStar, "Marker: Shooting Star (Current)", char="", color=orange, size=size.tiny, location=location.abovebar, text="Shooting\nStar")
+plotchar( UseMarkerAndText and ShowDojiHammer and Doji, "Marker: Doji", char="", color=orange, size=size.tiny, location=location.abovebar, text="Doji")
+plotchar( UseMarkerAndText and ShowDojiHammer and Hammer, "Marker: Hammer", char="", color=orange, size=size.tiny, location=location.abovebar, text="Hammer")
